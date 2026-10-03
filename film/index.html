@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Albion Journal — film</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+  #stage { position: relative; overflow: hidden; background: #0b0d12; font-family: Inter, sans-serif; color: #dde2ec; }
+  .cam, .overlay { position: absolute; inset: 0; transform-origin: 50% 50%; }
+  .layer { position: absolute; inset: 0; overflow: hidden; }
+  .fill { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  .abs { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; }
+  .px { font-family: 'Pixelify Sans', monospace; font-weight: 600; line-height: 1; white-space: nowrap; }
+  .inter { font-family: Inter, sans-serif; }
+  img.ui { position: absolute; display: block; }
+  .pixelated { image-rendering: pixelated; }
+  .gold { background: linear-gradient(180deg, #fbe39a 0%, #f5d47e 30%, #eebc4e 62%, #b9852a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .silver { background: linear-gradient(180deg, #ffffff 0%, #d9dee8 35%, #8d96a8 52%, #f4f6fa 70%, #7c8597 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .fire { background: linear-gradient(180deg, #ffe08a 0%, #ffb347 35%, #ff7a2f 65%, #d8432b 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="data/timeline.js"></script>
+<script src="data/manifest.js"></script>
+<script src="data/items_sample.js"></script>
+<script src="vendor/albion_logo.js"></script>
+<script src="engine.js"></script>
+<script src="global.js"></script>
+<script src="lib.js"></script>
+<script src="scenes_hook.js"></script>
+<script src="scenes_reveal.js"></script>
+<script src="scenes_features.js"></script>
+<script src="scenes_montage.js"></script>
+<script src="scenes_end.js"></script>
+<script>
+  (async () => {
+    await document.fonts.load('600 100px "Pixelify Sans"');
+    await document.fonts.load('400 100px "Pixelify Sans"');
+    await document.fonts.load('700 100px Inter');
+    await document.fonts.ready;
+    FX.init();
+    const imgs = [...document.images];
+    await Promise.all(imgs.map(i => i.decode().catch(() => console.warn('img failed', i.src))));
+    FX.renderFrame(0);
+    window.READY = true;
+  })();
+</script>
+</body>
+</html>

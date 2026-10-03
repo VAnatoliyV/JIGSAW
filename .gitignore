@@ -1,0 +1,9 @@
+node_modules/
+tools/models/
+scratch_vo/
+assets/audio/music/stems/
+assets/screens/explore/
+out/frames/
+out/chunks/
+*.pyc
+__pycache__/

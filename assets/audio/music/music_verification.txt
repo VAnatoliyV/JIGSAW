@@ -1,0 +1,268 @@
+==============================================================================
+ALBION JOURNAL MUSIC -- VERIFICATION
+==============================================================================
+
+[1] FORMAT / LEVELS
+  file          : /home/user/JIGSAW/assets/audio/music/music_mix.wav
+  format        : PCM_24, 48000 Hz, 2 ch
+  duration      : 120.000000 s  (5760000 samples)  -> OK
+  sample peak   : -1.31 dBFS
+  true peak 4x  : -1.30 dBTP  -> OK
+  integrated    : -16.03 LUFS (pyloudnorm)  |  ffmpeg ebur128: I=-16.0 LUFS, LRA=9.2 LU, TP=-1.3 dBTP
+  last 0.2 s    : max |x| = 0.00e+00  -> silent OK
+  119.3-119.8 s : RMS -85.0 dBFS (near-silence before the cut)
+
+[2] LOUDNESS CURVE PER BAR  (bar LUFS = K-weighted energy over the 2 s bar; ST = short-term 3 s; M = momentary 0.4 s)
+  bar     t0 section     barLUFS  ST@end  STmax   Mmax  graph
+    1    0.0 hook          -18.1     nan    nan  -14.7  #####################
+    2    2.0 hook          -17.9   -18.0  -18.0  -14.5  ######################
+    3    4.0 hook          -15.9   -16.5  -15.7  -11.9  ########################
+    4    6.0 hook          -19.7   -20.0  -16.0  -16.6  ####################
+    5    8.0 hook          -24.7   -22.4  -20.3  -23.5  ###############
+    6   10.0 hook          -20.1   -21.1  -21.1  -17.1  ###################
+    7   12.0 hook          -20.6   -19.6  -19.6  -16.8  ###################
+    8   14.0 hook          -17.6   -18.5  -18.5  -15.1  ######################
+    9   16.0 reveal        -12.4   -13.3  -13.3   -9.4  ###########################
+   10   18.0 reveal        -13.1   -13.7  -12.3  -10.6  ##########################
+   11   20.0 reveal        -14.4   -14.4  -13.3  -13.5  #########################
+   12   22.0 reveal        -14.7   -14.8  -14.3  -13.5  #########################
+   13   24.0 reveal        -14.5   -14.7  -14.4  -13.5  #########################
+   14   26.0 reveal        -13.8   -14.2  -14.1  -13.0  ##########################
+   15   28.0 reveal        -15.0   -14.7  -14.1  -14.3  ########################
+   16   30.0 reveal        -14.9   -15.0  -14.7  -14.3  #########################
+   17   32.0 feat1         -17.7   -16.6  -14.5  -12.3  ######################
+   18   34.0 feat1         -20.9   -21.4  -16.7  -18.4  ###################
+   19   36.0 feat1         -20.0   -20.6  -20.3  -17.9  ###################
+   20   38.0 feat1         -21.2   -21.1  -20.2  -18.7  ##################
+   21   40.0 feat1         -21.0   -21.3  -20.6  -18.3  ###################
+   22   42.0 feat1         -20.0   -20.7  -20.3  -17.4  ####################
+   23   44.0 feat1         -21.4   -21.1  -20.1  -18.7  ##################
+   24   46.0 feat1         -20.2   -20.8  -20.6  -18.1  ###################
+   25   48.0 feat2         -16.4   -17.5  -17.1  -11.4  #######################
+   26   50.0 feat2         -19.5   -20.2  -17.0  -17.7  ####################
+   27   52.0 feat2         -19.9   -20.2  -19.2  -17.1  ####################
+   28   54.0 feat2         -19.3   -20.0  -19.4  -17.8  ####################
+   29   56.0 feat2         -19.1   -19.4  -18.6  -16.1  ####################
+   30   58.0 feat2         -19.1   -19.8  -18.8  -17.3  ####################
+   31   60.0 feat2         -18.4   -18.9  -18.4  -16.6  #####################
+   32   62.0 feat2         -17.7   -18.3  -18.0  -16.4  ######################
+   33   64.0 feat3         -17.3   -17.5  -16.6  -12.3  ######################
+   34   66.0 feat3         -20.9   -20.9  -17.4  -18.3  ###################
+   35   68.0 feat3         -19.4   -20.0  -20.0  -18.3  ####################
+   36   70.0 feat3         -20.9   -20.4  -19.6  -17.3  ###################
+   37   72.0 feat3         -21.2   -21.4  -20.2  -18.8  ##################
+   38   74.0 feat3         -19.1   -19.8  -19.8  -17.5  ####################
+   39   76.0 feat3         -20.5   -20.2  -19.5  -18.6  ###################
+   40   78.0 feat3         -19.2   -19.6  -19.6  -18.3  ####################
+   41   80.0 montage       -14.1   -15.2  -15.2  -11.9  #########################
+   42   82.0 montage       -13.8   -14.0  -13.9  -11.5  ##########################
+   43   84.0 montage       -14.2   -14.1  -13.8  -12.0  #########################
+   44   86.0 montage       -14.4   -14.4  -14.2  -12.2  #########################
+   45   88.0 breakdown     -18.6   -16.5  -14.5  -12.4  #####################
+   46   90.0 breakdown     -23.3   -24.2  -17.4  -21.7  ################
+   47   92.0 breakdown     -23.7   -23.7  -23.4  -22.0  ################
+   48   94.0 breakdown     -21.0   -21.8  -21.8  -17.7  ##################
+   49   96.0 metric        -13.2   -14.5  -14.5   -9.3  ##########################
+   50   98.0 metric        -20.7   -19.0  -14.4  -19.4  ###################
+   51  100.0 metric        -17.2   -18.0  -18.0  -16.4  ######################
+   52  102.0 metric        -14.5   -15.2  -15.2  -13.2  #########################
+   53  104.0 finale        -11.1   -11.8  -11.8   -9.2  ############################
+   54  106.0 finale        -11.6   -11.8  -11.1  -10.0  ############################
+   55  108.0 finale        -12.4   -12.3  -11.7  -11.8  ###########################
+   56  110.0 finale        -11.8   -12.0  -12.0  -11.1  ############################
+   57  112.0 finale        -12.1   -12.1  -11.8  -11.6  ###########################
+   58  114.0 finale        -12.1   -12.1  -12.1  -11.6  ###########################
+   59  116.0 outro         -10.9   -11.2  -11.2   -8.9  #############################
+   60  118.0 outro         -31.5   -16.7  -11.3  -12.2  ########
+
+  section averages (energy mean of bar LUFS):
+    hook bars 1-3     -17.2 LUFS
+    hook bars 4-6     -21.0 LUFS
+    build 7-8         -18.8 LUFS
+    drop 9-16         -14.0 LUFS
+    feat1 17-24       -20.1 LUFS
+    feat2 25-32       -18.5 LUFS
+    feat3 33-40       -19.6 LUFS
+    montage 41-44     -14.1 LUFS
+    breakdown 45-48   -21.1 LUFS
+    bar 49 hit        -13.2 LUFS
+    metric 50-52      -16.8 LUFS
+    finale 53-58      -11.8 LUFS
+    outro 59-60       -13.9 LUFS
+    [OK] hook 1-3 quieter than drop 9-16
+    [OK] build 7-8 louder than bars 4-6
+    [OK] features quieter than drop
+    [OK] breakdown 45-48 clearly quieter than drop/finale
+    [OK] bar 49 louder than breakdown
+    [OK] finale 53-58 is the loudest section (multi-bar sections)
+    [OK] bar 49 hit >= drop average (huge hit)
+    [OK] outro decays (bar 60 < bar 59 - 10 dB)
+
+[3] ACCENT TIMING (spectral flux, 512-pt STFT, 1 ms hop, search +/-60 ms)
+   event t type    str label                     measured delta ms flux/median
+     0.500 impact    2 CRAFTING                    0.5000     -0.0         6.5  OK
+     1.500 impact    2 BLIND                       1.4990     -1.0         6.0  OK
+     2.500 impact    2 BURNS                       2.4990     -1.0         4.8  OK
+     3.500 impact    2 YOUR                        3.5000      0.0         3.7  OK
+     4.000 impact    3 SILVER.                     3.9990     -1.0         2.9  OK
+     6.000 stamp       7 CITIES                    6.0000      0.0         5.3  OK
+     7.250 stamp       1 BLACK MARKET              7.2510      1.0         5.6  OK
+    11.000 stamp       TAX                        11.0000      0.0         5.7  OK
+    11.750 stamp       STATION FEE                11.7510      1.0         5.3  OK
+    12.750 stamp       RESOURCE RETURN            12.7510      1.0         4.1  OK
+    16.000 impact    3 DROP                       15.9990     -1.0         2.6  OK
+    18.000 hit         wordmark Albion Journal    18.0050      5.0         2.6  OK
+    32.000 impact    2 01 CRAFTING                32.0010      1.0         3.0  OK
+    48.000 impact    2 02 BLACK MARKET            48.0000      0.0         3.5  OK
+    64.000 impact    2 03 ANY PRICE               64.0000      0.0         2.7  OK
+    80.000 hit         montage cut 1              80.0010      1.0         2.4  OK
+    81.000 hit         montage cut 2              80.9990     -1.0         3.0  OK
+    82.000 hit         montage cut 3              82.0000      0.0         3.1  OK
+    83.000 hit         montage cut 4              83.0000      0.0         3.5  OK
+    84.000 hit         montage cut 5              84.0000      0.0         3.2  OK
+    85.000 hit         montage cut 6              85.0000      0.0         3.7  OK
+    86.000 hit         montage cut 7              86.0000      0.0         3.4  OK
+    87.000 hit         montage cut 8              87.0000      0.0         3.4  OK
+    88.000 impact    2 breakdown                  88.0000      0.0         3.2  OK
+    96.000 impact    3 6,985 lands                95.9990     -1.0         3.2  OK
+   104.000 impact    3 final chorus / logo lock  103.9990     -1.0         2.0  OK
+   106.000 stamp       STOP GUESSING.            106.0000      0.0         1.9  OK
+   107.000 stamp       START CRAFTING.           106.9990     -1.0         2.2  OK
+   116.000 impact    3 FINAL HIT                 115.9990     -1.0         2.0  OK
+  -> 29 accents, mean delta +0.0 ms, max |delta| 5.0 ms, 29/29 within +/-15 ms
+
+[4] STEMS
+  drums_perc  FLOAT 48000 Hz 2ch 120.000000s  peak   -0.8 dBFS  ok
+      RMS/section: hook=-25.6 revea=-22.7 feat1=-28.2 feat2=-24.9 feat3=-28.8 monta=-20.9 break=-27.9 metri=-25.3 final=-22.0 outro=-27.3
+  low         FLOAT 48000 Hz 2ch 120.000000s  peak   -5.3 dBFS  ok
+      RMS/section: hook=-25.2 revea=-24.3 feat1=-33.8 feat2=-25.9 feat3=-31.5 monta=-23.9 break=-28.8 metri=-28.2 final=-23.2 outro=-22.5
+  strings     FLOAT 48000 Hz 2ch 120.000000s  peak   -5.9 dBFS  ok
+      RMS/section: hook=-28.5 revea=-26.8 feat1=-26.9 feat2=-30.0 feat3=-26.3 monta=-27.7 break=-30.6 metri=-25.4 final=-22.3 outro=-23.7
+  brass       FLOAT 48000 Hz 2ch 120.000000s  peak  -10.5 dBFS  ok
+      RMS/section: hook=-34.5 revea=-25.7 feat1=-50.2 feat2=-33.8 feat3=-240.0 monta=-34.8 break=-72.8 metri=-30.6 final=-24.2 outro=-27.5
+  choir_pads  FLOAT 48000 Hz 2ch 120.000000s  peak   -7.2 dBFS  ok
+      RMS/section: hook=-32.3 revea=-23.9 feat1=-29.6 feat2=-31.0 feat3=-29.7 monta=-25.4 break=-36.8 metri=-25.2 final=-21.3 outro=-26.2
+  melody      FLOAT 48000 Hz 2ch 120.000000s  peak   -8.3 dBFS  ok
+      RMS/section: hook=-240.0 revea=-24.5 feat1=-33.7 feat2=-31.6 feat3=-30.5 monta=-25.7 break=-31.5 metri=-29.1 final=-22.8 outro=-26.5
+  fx_hits     FLOAT 48000 Hz 2ch 120.000000s  peak   -1.4 dBFS  ok
+      RMS/section: hook=-25.7 revea=-25.4 feat1=-32.8 feat2=-32.8 feat3=-32.8 monta=-20.8 break=-29.6 metri=-20.0 final=-23.6 outro=-17.4
+  sum of stems: integrated -15.88 LUFS, true peak 2.69 dBTP (pre-limiter)
+  mix - sum(stems): residual RMS -40.7 dBFS (= limiter action only), correlation 0.99764
+
+[5] PRESETS (expected name vs SoundFont preset at that bank/program)
+  taiko       drums_perc  bank 128 prog  48  Orchestra Kit        -> Orchestra Kit        OK
+  taiko_hi    drums_perc  bank   0 prog 116  Taiko Drum           -> Taiko Drum           OK
+  bassdrum    drums_perc  bank   8 prog 116  Concert Bass Drum    -> Concert Bass Drum    OK
+  timpani     drums_perc  bank   0 prog  47  Timpani              -> Timpani              OK
+  snare       drums_perc  bank 128 prog  48  Orchestra Kit        -> Orchestra Kit        OK
+  msnare      drums_perc  bank 128 prog  56  Marching Snare       -> Marching Snare       OK
+  frame       drums_perc  bank 128 prog  48  Orchestra Kit        -> Orchestra Kit        OK
+  tamb        drums_perc  bank 128 prog  48  Orchestra Kit        -> Orchestra Kit        OK
+  orchhit     fx_hits     bank   0 prog  55  Orchestra Hit        -> Orchestra Hit        OK
+  cymbals     fx_hits     bank 128 prog  58  Marching Cymbals     -> Marching Cymbals     OK
+  kitcym      fx_hits     bank 128 prog  48  Orchestra Kit        -> Orchestra Kit        OK
+  basses      low         bank  50 prog  48  Basses Fast          -> Basses Fast          OK
+  basses_sus  low         bank  50 prog  49  Basses Slow          -> Basses Slow          OK
+  bass_pizz   low         bank  50 prog  45  Basses Pizzicato     -> Basses Pizzicato     OK
+  bass_stab   low         bank  50 prog  48  Basses Fast          -> Basses Fast          OK
+  tuba        low         bank   0 prog  58  Tuba                 -> Tuba                 OK
+  trombones   low         bank   0 prog  57  Trombone             -> Trombone             OK
+  trb_stab    low         bank   0 prog  57  Trombone             -> Trombone             OK
+  vln1_sus    strings     bank  20 prog  49  Violins Slow         -> Violins Slow         OK
+  vla_sus     strings     bank  30 prog  49  Violas Slow          -> Violas Slow          OK
+  vc_sus      strings     bank  40 prog  49  Celli Slow           -> Celli Slow           OK
+  ost_hi      strings     bank  25 prog  48  Violins2 Fast        -> Violins2 Fast        OK
+  ost_lo      strings     bank  30 prog  48  Violas Fast          -> Violas Fast          OK
+  vc_ost      strings     bank  40 prog  48  Celli Fast           -> Celli Fast           OK
+  vc_stab     strings     bank  40 prog  48  Celli Fast           -> Celli Fast           OK
+  pizz_stab   strings     bank  40 prog  45  Celli Pizzicato      -> Celli Pizzicato      OK
+  str_stab    strings     bank   0 prog  48  Strings Fast         -> Strings Fast         OK
+  trem_vln    strings     bank  20 prog  44  Violins Tremolo      -> Violins Tremolo      OK
+  trem_vla    strings     bank  30 prog  44  Violas Tremolo       -> Violas Tremolo       OK
+  trem_vc     strings     bank  40 prog  44  Celli Tremolo        -> Celli Tremolo        OK
+  pizz        strings     bank   0 prog  45  Strings Pizzicato    -> Strings Pizzicato    OK
+  harp        strings     bank   0 prog  46  Harp                 -> Harp                 OK
+  lute        strings     bank   0 prog  24  Nylon String Guitar  -> Nylon String Guitar  OK
+  vc_theme    strings     bank  40 prog  48  Celli Fast           -> Celli Fast           OK
+  horns       brass       bank   0 prog  60  French Horns         -> French Horns         OK
+  brass_sect  brass       bank   0 prog  61  Brass Section        -> Brass Section        OK
+  choir_l     choir_pads  bank   0 prog  52  Choir Aahs           -> Choir Aahs           OK
+  choir_r     choir_pads  bank   0 prog  52  Choir Aahs           -> Choir Aahs           OK
+  oohs_l      choir_pads  bank   0 prog  53  Voice Oohs           -> Voice Oohs           OK
+  oohs_r      choir_pads  bank   0 prog  53  Voice Oohs           -> Voice Oohs           OK
+  drone       choir_pads  bank   0 prog 109  Bagpipe              -> Bagpipe              OK
+  horn_lead   melody      bank   0 prog  60  French Horns         -> French Horns         OK
+  vln_lead    melody      bank  20 prog  48  Violins Fast         -> Violins Fast         OK
+  trp_lead    melody      bank   0 prog  56  Trumpet              -> Trumpet              OK
+  flute       melody      bank   0 prog  73  Flute                -> Flute                OK
+  fiddle      melody      bank   0 prog 110  Fiddle               -> Fiddle               OK
+  -> all presets resolved without fallback: True (FluidSynth logs are also scanned for "not found/substituted" during the build)
+
+[6] VOICE-OVER BAND (1-4 kHz) -- melody stem level during VO vs. in gaps
+  melody 1-4k, whole film : VO  -37.4 dBFS | no-VO  -33.7 dBFS
+  melody 1-4k, features   : VO  -42.4 dBFS | no-VO  -36.1 dBFS
+  full music 1-4k         : VO  -30.7 dBFS | no-VO  -28.1 dBFS
+  per line (melody 1-4k RMS while the line plays):
+    v01    6.10-  8.27s  melody -240.0 dBFS   music total  -40.5 dBFS
+    v02    9.00- 12.33s  melody -240.0 dBFS   music total  -41.6 dBFS
+    v03   12.60- 15.93s  melody -240.0 dBFS   music total  -32.7 dBFS
+    v04   16.75- 18.54s  melody  -35.2 dBFS   music total  -26.7 dBFS
+    v05   19.90- 27.46s  melody  -33.6 dBFS   music total  -27.8 dBFS
+    v06   28.60- 30.77s  melody  -33.3 dBFS   music total  -27.8 dBFS
+    v07   32.60- 36.70s  melody  -39.1 dBFS   music total  -34.2 dBFS
+    v08   37.40- 43.15s  melody  -40.8 dBFS   music total  -35.0 dBFS
+    v09   43.20- 48.55s  melody  -43.9 dBFS   music total  -33.2 dBFS
+    v10   48.60- 54.23s  melody  -90.8 dBFS   music total  -34.3 dBFS
+    v11   54.40- 60.42s  melody  -50.4 dBFS   music total  -34.0 dBFS
+    v12   64.60- 67.93s  melody  -41.1 dBFS   music total  -35.5 dBFS
+    v13   69.60- 74.47s  melody  -40.7 dBFS   music total  -35.3 dBFS
+    v14   75.60- 77.39s  melody  -38.3 dBFS   music total  -34.4 dBFS
+    v15   80.30- 85.17s  melody  -35.7 dBFS   music total  -28.7 dBFS
+    v16   88.60- 90.77s  melody  -46.0 dBFS   music total  -41.5 dBFS
+    v17   96.60-100.70s  melody  -42.4 dBFS   music total  -31.4 dBFS
+    v18  104.60-106.39s  melody  -31.0 dBFS   music total  -24.0 dBFS
+    v19  108.60-111.16s  melody  -29.0 dBFS   music total  -24.4 dBFS
+
+[7] HARMONY CHECK -- final chord (116.1-117.5 s): chroma energy
+  C:0.02 C#:0.05 D:0.78 D#:0.00 E:0.17 F:0.00 F#:0.64 G:0.00 G#:0.00 A:1.00 A#:0.00 B:0.00
+  F# / F ratio = 333.7  -> D MAJOR (Picardy) OK
+
+[8] MIDI GRID / TEMPO (music_mix.mid)
+  tempo events: [500000] us/beat (500000 = 120 BPM), time signature [(4, 4)]
+  4205 note-ons, 0 off the 32nd-note grid -> OK
+  tracks: 47 (conductor + one per part), length 118.06 s
+
+[9] LOW END -- sub band (<60 Hz) punch vs smear: 50 ms RMS envelope p90/p10 per section
+  hook       sub RMS  -24.4 dBFS   p90/p10  15.5 dB
+  reveal     sub RMS  -26.5 dBFS   p90/p10  13.9 dB
+  feat1      sub RMS  -33.8 dBFS   p90/p10  27.5 dB
+  feat2      sub RMS  -31.3 dBFS   p90/p10  11.9 dB
+  feat3      sub RMS  -33.5 dBFS   p90/p10  29.0 dB
+  montage    sub RMS  -22.7 dBFS   p90/p10  17.0 dB
+  breakdown  sub RMS  -28.1 dBFS   p90/p10   2.8 dB
+  metric     sub RMS  -21.3 dBFS   p90/p10  32.2 dB
+  finale     sub RMS  -25.0 dBFS   p90/p10  16.7 dB
+  outro      sub RMS  -19.0 dBFS   p90/p10 125.6 dB
+  spectral balance per section (dB re. 250-4k band): <60 | 60-250 | >4k
+  hook          2.6 |    3.6 |  -19.1
+  reveal       -7.1 |   -2.3 |  -23.7
+  feat1        -7.8 |   -1.1 |  -23.8
+  feat2        -7.0 |    0.5 |  -28.1
+  feat3        -8.1 |   -0.9 |  -18.9
+  montage      -1.6 |    1.8 |  -21.1
+  breakdown    -0.1 |    1.0 |  -19.0
+  metric        0.9 |   -1.2 |  -18.8
+  finale       -7.7 |   -3.3 |  -20.7
+  outro         1.2 |   -2.1 |  -19.9
+
+[10] STEREO IMAGE (L/R balance, inter-channel correlation)
+  drums_perc  L-R balance  +0.3 dB   correlation  0.97
+  low         L-R balance  -1.7 dB   correlation  0.85
+  strings     L-R balance  -2.9 dB   correlation  0.39
+  brass       L-R balance  +2.4 dB   correlation  0.75
+  choir_pads  L-R balance  +0.4 dB   correlation  0.12
+  melody      L-R balance  +2.6 dB   correlation  0.70
+  fx_hits     L-R balance  +0.0 dB   correlation  1.00
+  MIX         L-R balance  -0.1 dB   correlation  0.70   mono fold-down loss -0.9 LU
+
+spectrogram: /home/user/JIGSAW/assets/audio/music/spectrogram.png

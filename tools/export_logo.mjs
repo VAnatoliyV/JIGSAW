@@ -1,0 +1,24 @@
+import { chromium } from 'playwright';
+import fs from 'fs';
+const code = fs.readFileSync('/home/user/JIGSAW/film/vendor/albion_logo.js', 'utf8');
+const b = await chromium.launch(); const p = await b.newPage();
+await p.setContent('<html><body style="margin:0;background:transparent"></body></html>');
+await p.addScriptTag({ content: code });
+const out = await p.evaluate(() => {
+  ANIM_ON = false;
+  const res = {};
+  const up = (cv, s) => { const c = document.createElement('canvas'); c.width = cv.width * s; c.height = cv.height * s;
+    const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(cv, 0, 0, c.width, c.height); return c.toDataURL('image/png'); };
+  const A = AJLogo.anvilUnpack(AJLogo.ANVIL_BODY);
+  const ca = document.createElement('canvas'); ca.width = A.w; ca.height = A.h;
+  AJLogo.anvilDraw(0, ca.getContext('2d'), A);
+  res.anvil = up(ca, 24); res.anvilSize = [A.w, A.h];
+  const H = AJLogo.logoUnpack(AJLogo.LOGO_BIG, 1);
+  const ch = document.createElement('canvas'); ch.width = H.w; ch.height = H.h;
+  AJLogo.logoDraw(0, ch.getContext('2d'), H);
+  res.hare = up(ch, 12); res.hareSize = [H.w, H.h];
+  return res;
+});
+for (const k of ['anvil', 'hare']) fs.writeFileSync(`/home/user/JIGSAW/assets/brand/logo_${k}_pixel.png`, Buffer.from(out[k].split(',')[1], 'base64'));
+console.log(out.anvilSize, out.hareSize);
+await b.close();

@@ -1,0 +1,10 @@
+import { open, SITE } from './site.mjs';
+const OUT = '/home/user/JIGSAW/assets/screens/explore';
+const { browser, page } = await open({ width: 1440, height: 900, dpr: 1 });
+await page.goto(SITE, { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(2500);
+const cards = await page.evaluate(() => [...document.querySelectorAll('#homeView *')].filter(e=>e.onclick||e.getAttribute('data-go')||e.getAttribute('data-mode')).slice(0,30).map(e=>e.tagName+'.'+e.className+' '+JSON.stringify(Object.fromEntries([...e.attributes].map(a=>[a.name,a.value.slice(0,40)])))));
+console.log(cards.join('\n'));
+const sel = await page.evaluate(() => { const h=[...document.querySelectorAll('h3,h2,b,div')].find(e=>e.innerText && e.innerText.trim().startsWith('🏝 Islands')); let p=h; for(let i=0;i<4&&p;i++){ if(p.onclick||p.getAttribute('data-sec')) break; p=p.parentElement;} return p? p.outerHTML.slice(0,400):null; });
+console.log(sel);
+await browser.close();

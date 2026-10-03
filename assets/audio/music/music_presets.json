@@ -1,0 +1,416 @@
+[
+ {
+  "part": "taiko",
+  "stem": "drums_perc",
+  "bank": 128,
+  "program": 48,
+  "wanted": "Orchestra Kit",
+  "soundfont": "Orchestra Kit",
+  "ok": true
+ },
+ {
+  "part": "taiko_hi",
+  "stem": "drums_perc",
+  "bank": 0,
+  "program": 116,
+  "wanted": "Taiko Drum",
+  "soundfont": "Taiko Drum",
+  "ok": true
+ },
+ {
+  "part": "bassdrum",
+  "stem": "drums_perc",
+  "bank": 8,
+  "program": 116,
+  "wanted": "Concert Bass Drum",
+  "soundfont": "Concert Bass Drum",
+  "ok": true
+ },
+ {
+  "part": "timpani",
+  "stem": "drums_perc",
+  "bank": 0,
+  "program": 47,
+  "wanted": "Timpani",
+  "soundfont": "Timpani",
+  "ok": true
+ },
+ {
+  "part": "snare",
+  "stem": "drums_perc",
+  "bank": 128,
+  "program": 48,
+  "wanted": "Orchestra Kit",
+  "soundfont": "Orchestra Kit",
+  "ok": true
+ },
+ {
+  "part": "msnare",
+  "stem": "drums_perc",
+  "bank": 128,
+  "program": 56,
+  "wanted": "Marching Snare",
+  "soundfont": "Marching Snare",
+  "ok": true
+ },
+ {
+  "part": "frame",
+  "stem": "drums_perc",
+  "bank": 128,
+  "program": 48,
+  "wanted": "Orchestra Kit",
+  "soundfont": "Orchestra Kit",
+  "ok": true
+ },
+ {
+  "part": "tamb",
+  "stem": "drums_perc",
+  "bank": 128,
+  "program": 48,
+  "wanted": "Orchestra Kit",
+  "soundfont": "Orchestra Kit",
+  "ok": true
+ },
+ {
+  "part": "orchhit",
+  "stem": "fx_hits",
+  "bank": 0,
+  "program": 55,
+  "wanted": "Orchestra Hit",
+  "soundfont": "Orchestra Hit",
+  "ok": true
+ },
+ {
+  "part": "cymbals",
+  "stem": "fx_hits",
+  "bank": 128,
+  "program": 58,
+  "wanted": "Marching Cymbals",
+  "soundfont": "Marching Cymbals",
+  "ok": true
+ },
+ {
+  "part": "kitcym",
+  "stem": "fx_hits",
+  "bank": 128,
+  "program": 48,
+  "wanted": "Orchestra Kit",
+  "soundfont": "Orchestra Kit",
+  "ok": true
+ },
+ {
+  "part": "basses",
+  "stem": "low",
+  "bank": 50,
+  "program": 48,
+  "wanted": "Basses Fast",
+  "soundfont": "Basses Fast",
+  "ok": true
+ },
+ {
+  "part": "basses_sus",
+  "stem": "low",
+  "bank": 50,
+  "program": 49,
+  "wanted": "Basses Slow",
+  "soundfont": "Basses Slow",
+  "ok": true
+ },
+ {
+  "part": "bass_pizz",
+  "stem": "low",
+  "bank": 50,
+  "program": 45,
+  "wanted": "Basses Pizzicato",
+  "soundfont": "Basses Pizzicato",
+  "ok": true
+ },
+ {
+  "part": "bass_stab",
+  "stem": "low",
+  "bank": 50,
+  "program": 48,
+  "wanted": "Basses Fast",
+  "soundfont": "Basses Fast",
+  "ok": true
+ },
+ {
+  "part": "tuba",
+  "stem": "low",
+  "bank": 0,
+  "program": 58,
+  "wanted": "Tuba",
+  "soundfont": "Tuba",
+  "ok": true
+ },
+ {
+  "part": "trombones",
+  "stem": "low",
+  "bank": 0,
+  "program": 57,
+  "wanted": "Trombone",
+  "soundfont": "Trombone",
+  "ok": true
+ },
+ {
+  "part": "trb_stab",
+  "stem": "low",
+  "bank": 0,
+  "program": 57,
+  "wanted": "Trombone",
+  "soundfont": "Trombone",
+  "ok": true
+ },
+ {
+  "part": "vln1_sus",
+  "stem": "strings",
+  "bank": 20,
+  "program": 49,
+  "wanted": "Violins Slow",
+  "soundfont": "Violins Slow",
+  "ok": true
+ },
+ {
+  "part": "vla_sus",
+  "stem": "strings",
+  "bank": 30,
+  "program": 49,
+  "wanted": "Violas Slow",
+  "soundfont": "Violas Slow",
+  "ok": true
+ },
+ {
+  "part": "vc_sus",
+  "stem": "strings",
+  "bank": 40,
+  "program": 49,
+  "wanted": "Celli Slow",
+  "soundfont": "Celli Slow",
+  "ok": true
+ },
+ {
+  "part": "ost_hi",
+  "stem": "strings",
+  "bank": 25,
+  "program": 48,
+  "wanted": "Violins2 Fast",
+  "soundfont": "Violins2 Fast",
+  "ok": true
+ },
+ {
+  "part": "ost_lo",
+  "stem": "strings",
+  "bank": 30,
+  "program": 48,
+  "wanted": "Violas Fast",
+  "soundfont": "Violas Fast",
+  "ok": true
+ },
+ {
+  "part": "vc_ost",
+  "stem": "strings",
+  "bank": 40,
+  "program": 48,
+  "wanted": "Celli Fast",
+  "soundfont": "Celli Fast",
+  "ok": true
+ },
+ {
+  "part": "vc_stab",
+  "stem": "strings",
+  "bank": 40,
+  "program": 48,
+  "wanted": "Celli Fast",
+  "soundfont": "Celli Fast",
+  "ok": true
+ },
+ {
+  "part": "pizz_stab",
+  "stem": "strings",
+  "bank": 40,
+  "program": 45,
+  "wanted": "Celli Pizzicato",
+  "soundfont": "Celli Pizzicato",
+  "ok": true
+ },
+ {
+  "part": "str_stab",
+  "stem": "strings",
+  "bank": 0,
+  "program": 48,
+  "wanted": "Strings Fast",
+  "soundfont": "Strings Fast",
+  "ok": true
+ },
+ {
+  "part": "trem_vln",
+  "stem": "strings",
+  "bank": 20,
+  "program": 44,
+  "wanted": "Violins Tremolo",
+  "soundfont": "Violins Tremolo",
+  "ok": true
+ },
+ {
+  "part": "trem_vla",
+  "stem": "strings",
+  "bank": 30,
+  "program": 44,
+  "wanted": "Violas Tremolo",
+  "soundfont": "Violas Tremolo",
+  "ok": true
+ },
+ {
+  "part": "trem_vc",
+  "stem": "strings",
+  "bank": 40,
+  "program": 44,
+  "wanted": "Celli Tremolo",
+  "soundfont": "Celli Tremolo",
+  "ok": true
+ },
+ {
+  "part": "pizz",
+  "stem": "strings",
+  "bank": 0,
+  "program": 45,
+  "wanted": "Strings Pizzicato",
+  "soundfont": "Strings Pizzicato",
+  "ok": true
+ },
+ {
+  "part": "harp",
+  "stem": "strings",
+  "bank": 0,
+  "program": 46,
+  "wanted": "Harp",
+  "soundfont": "Harp",
+  "ok": true
+ },
+ {
+  "part": "lute",
+  "stem": "strings",
+  "bank": 0,
+  "program": 24,
+  "wanted": "Nylon String Guitar",
+  "soundfont": "Nylon String Guitar",
+  "ok": true
+ },
+ {
+  "part": "vc_theme",
+  "stem": "strings",
+  "bank": 40,
+  "program": 48,
+  "wanted": "Celli Fast",
+  "soundfont": "Celli Fast",
+  "ok": true
+ },
+ {
+  "part": "horns",
+  "stem": "brass",
+  "bank": 0,
+  "program": 60,
+  "wanted": "French Horns",
+  "soundfont": "French Horns",
+  "ok": true
+ },
+ {
+  "part": "brass_sect",
+  "stem": "brass",
+  "bank": 0,
+  "program": 61,
+  "wanted": "Brass Section",
+  "soundfont": "Brass Section",
+  "ok": true
+ },
+ {
+  "part": "choir_l",
+  "stem": "choir_pads",
+  "bank": 0,
+  "program": 52,
+  "wanted": "Choir Aahs",
+  "soundfont": "Choir Aahs",
+  "ok": true
+ },
+ {
+  "part": "choir_r",
+  "stem": "choir_pads",
+  "bank": 0,
+  "program": 52,
+  "wanted": "Choir Aahs",
+  "soundfont": "Choir Aahs",
+  "ok": true
+ },
+ {
+  "part": "oohs_l",
+  "stem": "choir_pads",
+  "bank": 0,
+  "program": 53,
+  "wanted": "Voice Oohs",
+  "soundfont": "Voice Oohs",
+  "ok": true
+ },
+ {
+  "part": "oohs_r",
+  "stem": "choir_pads",
+  "bank": 0,
+  "program": 53,
+  "wanted": "Voice Oohs",
+  "soundfont": "Voice Oohs",
+  "ok": true
+ },
+ {
+  "part": "drone",
+  "stem": "choir_pads",
+  "bank": 0,
+  "program": 109,
+  "wanted": "Bagpipe",
+  "soundfont": "Bagpipe",
+  "ok": true
+ },
+ {
+  "part": "horn_lead",
+  "stem": "melody",
+  "bank": 0,
+  "program": 60,
+  "wanted": "French Horns",
+  "soundfont": "French Horns",
+  "ok": true
+ },
+ {
+  "part": "vln_lead",
+  "stem": "melody",
+  "bank": 20,
+  "program": 48,
+  "wanted": "Violins Fast",
+  "soundfont": "Violins Fast",
+  "ok": true
+ },
+ {
+  "part": "trp_lead",
+  "stem": "melody",
+  "bank": 0,
+  "program": 56,
+  "wanted": "Trumpet",
+  "soundfont": "Trumpet",
+  "ok": true
+ },
+ {
+  "part": "flute",
+  "stem": "melody",
+  "bank": 0,
+  "program": 73,
+  "wanted": "Flute",
+  "soundfont": "Flute",
+  "ok": true
+ },
+ {
+  "part": "fiddle",
+  "stem": "melody",
+  "bank": 0,
+  "program": 110,
+  "wanted": "Fiddle",
+  "soundfont": "Fiddle",
+  "ok": true
+ }
+]

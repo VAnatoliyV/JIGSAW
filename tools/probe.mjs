@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+const failed = new Set();
+p.on('requestfailed', r => failed.add(new URL(r.url()).host));
+p.on('console', m => { if (m.type()==='error') console.log('console:', m.text().slice(0,200)); });
+await p.goto('http://localhost:8765/', { waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(6000);
+await p.screenshot({ path: '/home/user/JIGSAW/assets/screens/_probe_home.png' });
+console.log('failed hosts', [...failed]);
+const nav = await p.evaluate(() => [...document.querySelectorAll('a,button,[data-sec],[data-tab]')].slice(0,80).map(e => (e.tagName+' '+(e.id||'')+' '+(e.className||'')+' | '+(e.innerText||'').trim().slice(0,40)).replace(/\s+/g,' ')));
+console.log(nav.join('\n'));
+await b.close();

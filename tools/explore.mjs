@@ -1,0 +1,13 @@
+import { open, SITE } from './site.mjs';
+const OUT = '/home/user/JIGSAW/assets/screens/explore';
+import fs from 'fs'; fs.mkdirSync(OUT, { recursive: true });
+const { browser, page } = await open({ width: 1440, height: 900, dpr: 1 });
+await page.goto(SITE, { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(3000);
+await page.screenshot({ path: `${OUT}/home_full.png`, fullPage: true });
+await page.click('#heroAll').catch(e=>console.log('heroAll', e.message));
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${OUT}/all_sections.png`, fullPage: true });
+const txt = await page.evaluate(() => document.body.innerText.slice(0, 6000));
+console.log(txt);
+await browser.close();
