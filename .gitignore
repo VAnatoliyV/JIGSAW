@@ -15,3 +15,4 @@ out/.snapshot_*/
 out/*.log
 out/chunks*/
 out/.render_*/
+out/*.mp4
