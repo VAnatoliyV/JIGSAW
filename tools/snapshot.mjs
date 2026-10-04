@@ -13,7 +13,7 @@ import { execFileSync } from 'child_process';
 
 // what the film page can load: film/** and assets/** except the (huge, not page-loaded) audio
 const INCLUDE = ['film', 'assets'];
-const EXCLUDE = new Set(['assets/audio']);
+const EXCLUDE = new Set(['assets/audio', 'film/devcap']);   // devcap = dev-only synthetic captures, never in a render
 const skip = rel => EXCLUDE.has(rel) || path.basename(rel).startsWith('.') || rel.endsWith('.part') || rel.endsWith('~');
 
 function listFiles(root) {

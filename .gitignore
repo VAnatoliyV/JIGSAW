@@ -11,3 +11,6 @@ out/test_*
 out/*.tmp*
 film/devcap/
 out/contact/frames_*/
+out/.snapshot_*/
+out/*.log
+out/chunks*/
