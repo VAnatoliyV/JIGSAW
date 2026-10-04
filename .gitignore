@@ -16,3 +16,4 @@ out/*.log
 out/chunks*/
 out/.render_*/
 out/*.mp4
+out/preview/
