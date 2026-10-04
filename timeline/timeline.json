@@ -1121,7 +1121,8 @@
    "t": 108.0,
    "type": "whoosh",
    "dur": 0.5,
-   "note": "CTA panel"
+   "vel": 0.55,
+   "note": "CTA panel (soft: tail of 'crafting')"
   },
   {
    "t": 110.0,
@@ -1292,9 +1293,29 @@
    "text": "No spreadsheets. No guesswork."
   },
   {
-   "id": "v15",
-   "t": 80.3,
-   "text": "Refining. Enchanting. Potions and food. Your island. Even the roads to Caerleon."
+   "id": "v15a",
+   "t": 80.12,
+   "text": "Refining."
+  },
+  {
+   "id": "v15b",
+   "t": 81.12,
+   "text": "Enchanting."
+  },
+  {
+   "id": "v15c",
+   "t": 82.08,
+   "text": "Potions and food."
+  },
+  {
+   "id": "v15d",
+   "t": 83.42,
+   "text": "Your island."
+  },
+  {
+   "id": "v15e",
+   "t": 84.24,
+   "text": "Even the roads to Caerleon."
   },
   {
    "id": "v16",

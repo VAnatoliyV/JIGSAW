@@ -119,7 +119,7 @@ ev(104.0, "impact", strength=3, note="final chorus / logo lockup")
 ev(104.0, "anvil")
 ev(104.0, "sparkle")
 ev(106.0, "stamp", note="STOP GUESSING."); ev(107.0, "stamp", note="START CRAFTING.")
-ev(108.0, "whoosh", dur=0.5, note="CTA panel")
+ev(108.0, "whoosh", dur=0.5, vel=0.55, note="CTA panel (soft: tail of 'crafting')")
 for i in range(12): ev(110.0 + 0.125 * i, "key", vel=0.5, note="URL types on")
 ev(112.0, "click", note="Open Crafting button")
 ev(112.0, "sparkle")
@@ -143,7 +143,13 @@ VO = [
   ("v12", 64.6,   "Need one price, fast? Type a few letters."),
   ("v13", 69.6,   "Master's Cape. All seven cities and the Black Market, at a glance."),
   ("v14", 75.6,   "No spreadsheets. No guesswork."),
-  ("v15", 80.3,   "Refining. Enchanting. Potions and food. Your island. Even the roads to Caerleon."),
+  # v15 is one take sliced at its natural pauses (audio-src/vo/take_george/v15a..e.wav) so each phrase
+  # lands just after its montage cut
+  ("v15a", 80.12, "Refining."),
+  ("v15b", 81.12, "Enchanting."),
+  ("v15c", 82.08, "Potions and food."),
+  ("v15d", 83.42, "Your island."),
+  ("v15e", 84.24, "Even the roads to Caerleon."),
   ("v16", 88.6,   "And the market never sleeps."),
   ("v17", 96.6,   "Six thousand, nine hundred and eighty-five items. Updated in seconds."),
   ("v18", 105.98, "Stop guessing. Start crafting."),

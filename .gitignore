@@ -10,3 +10,4 @@ __pycache__/
 out/test_*
 out/*.tmp*
 film/devcap/
+out/contact/frames_*/

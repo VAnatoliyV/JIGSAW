@@ -2224,9 +2224,9 @@
   "type": "whoosh",
   "accent": 108.5,
   "variant": "whoosh_0p50_1",
-  "note": "CTA panel",
-  "vel": 1.0,
-  "gain_db": 0.0,
+  "note": "CTA panel (soft: tail of 'crafting')",
+  "vel": 0.55,
+  "gain_db": -5.19,
   "limiter_gr_db": 0.0,
   "start_sample": 5184028,
   "anchor_offset_s": 0.49942

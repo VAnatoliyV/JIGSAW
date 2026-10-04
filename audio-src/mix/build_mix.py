@@ -88,7 +88,7 @@ CPF = FH // HOP                    # 20 control points per frame
 
 P = dict(
     # ---- VO edit (silence only; the visual track keys on v16/v17/v19 word times, which are not touched)
-    vo_tighten={'v02': 11.71, 'v09': 47.88, 'v15': 85.93},  # line -> its last voiced 5 ms frame ends by (s): clears the
+    vo_tighten={'v02': 11.71, 'v09': 47.88, 'v15e': 85.93},  # line -> its last voiced 5 ms frame ends by (s): clears the
                                 # 11.75 stamp, the 48.0 impact and the 86.0 montage cut
     tighten_thr_db=-38.0, tighten_min_pause=0.06, tighten_keep_long=0.13, tighten_keep_short=0.05, tighten_xfade_ms=8.0,
     phrase_pause_s=0.10,
@@ -102,8 +102,7 @@ P = dict(
     comp_median_gr_db=3.0,      # threshold is calibrated so the median GR on voiced frames is this
     sat_drive=2.0, sat_mix=0.25,
     air_band=(5500.0, 11000.0), air_shift_hz=5500.0, air_db=-12.0, air_hpf=10500.0, air_lpf=14000.0,
-    vo_rides={'v15': [['Enchanting', -1.0]],    # clip gain: the hottest word of the montage list (+1.5 dB over its neighbours)
-              'v17': [['Updated in seconds', 1.5]], 'v18': [['Stop guessing', 0.6], ['Start crafting', 0.3]]},
+    vo_rides={'v17': [['Updated in seconds', 1.5]], 'v18': [['Stop guessing', 0.6], ['Start crafting', 0.3]]},
     ride_ramp_s=0.04,
     vo_lift_max_db=0.9,         # max line-loudness lift over the levelled value (phrase rides + solver lift): +/-1 LU
     vo_tp_rel_db=-3.0, vo_lim_la_ms=1.5, vo_lim_rel_ms=40.0, master_gain_guess_db=0.5,

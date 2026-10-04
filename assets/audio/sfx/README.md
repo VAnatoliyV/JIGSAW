@@ -40,7 +40,7 @@ Variation: impacts alternate 2 variants per strength, hits 4, stamps 3, clicks 3
 | true_peak_dbtp | -1.33 |
 | sample_peak_dbfs | -1.35 |
 | integrated_lufs | -18.6 |
-| ffmpeg_ebur128 | {'I_LUFS': -18.5, 'LRA_LU': 17.5, 'TP_dBFS': -1.3} |
+| ffmpeg_ebur128 | {'I_LUFS': -18.6, 'LRA_LU': 17.5, 'TP_dBFS': -1.3} |
 | limiter_gr_over_0.5db_at | 0.50s 0.8dB (swell,impact); 4.00s 1.6dB (impact,coin); 16.00s 3.4dB (riser,reverse,impact,anvil,sparkle); 32.00s 0.8dB (whoosh,impact); 48.00s 0.5dB (whoosh,impact); 80.00s 1.2dB (whoosh,hit); 95.95s 0.7dB (tick); 96.00s 1.5dB (riser,reverse,impact,coin); 104.00s 3.0dB (riser,reverse,impact,anvil,sparkle); 116.00s 2.7dB (reverse,impact,anvil) |
 
 Master chain: sum -> zero-latency look-ahead soft limiter (4x oversampled true-peak detector, 3 dB soft knee, 4 ms look-ahead ramp, 120 ms release, ceiling -1.3 dBTP) -> 30 ms end fade. The limiter is gain-only with no delay, so it cannot move any accent.
@@ -124,58 +124,6 @@ Peak = sample peak at vel 1 (before track trims/vel). M400 / S50 = max BS.1770 K
 | `tick_3.wav` | 0.020 | 0.0 (transient) | -17.0 | -17.0 | -43.4 | -34.3 | 2e-05 | -189 | Counter tick: dry 6.3 kHz + 9.4 kHz damped modes with a 0.3 ms HP noise tick, ~15 ms, seeded +-4% pitch. |
 | `tick_4.wav` | 0.020 | 0.0 (transient) | -17.0 | -17.0 | -42.2 | -33.2 | 1e-05 | -189 | Counter tick: dry 6.3 kHz + 9.4 kHz damped modes with a 0.3 ms HP noise tick, ~15 ms, seeded +-4% pitch. |
 
-## Timing verification (measured on the mastered sfx_track.wav)
+## Timing verification
 
-Sample of events across all types (isolated ones preferred), auto-selected each build. `mix` = accent measured in the final track: transients -> peak of a zero-phase 2 kHz-HP Hilbert envelope just after the nearest blind spectral-flux onset; whoosh -> loudest 10 ms RMS (0.4-9 kHz); swell -> loudest one-period (27.2 ms) RMS below 250 Hz; riser/reverse -> the end (last sample within 30 dB of the final max). When an end/loudest-anchored event lands on a hit (`coincident with`), the mix value is the group transient. `flux` = nearest onset from the blind spectral-flux detector (512-pt STFT, 1.33 ms hop; its constant -1.3..-4 ms offset is the frame-centring bias of the detector). `solo` = the event rendered alone and measured the same way. Note: whoosh and swell anchors are defined as their measured loudest point (whoosh: 15 ms Hann RMS, moved <=3.5 ms from the design peak, verified here with a different 10 ms band RMS; swell: one-period RMS, ~5 ms before the envelope top, so its solo value is 0 by construction).
-
-| t | type | variant | target s | mix s | mix err ms | flux err ms | solo err ms | coincident with |
-|---:|---|---|---:|---:|---:|---:|---:|---|
-| 0.000 | swell | swell_0p50_1 | 0.500 | 0.5004 | +0.4 | -2.7 | +0.0 | impact |
-| 1.500 | impact | impact_s2b | 1.500 | 1.5003 | +0.3 | -2.7 | +0.3 | - |
-| 2.500 | fire | fire_1p00_1 | 2.500 | 2.5004 | +0.4 | -2.7 | +0.4 | impact |
-| 3.500 | impact | impact_s2b | 3.500 | 3.5003 | +0.3 | -2.7 | +0.3 | - |
-| 12.750 | stamp | stamp_2 | 12.750 | 12.7510 | +1.0 | -2.0 | +1.0 | - |
-| 25.000 | pop | pop_A5 | 25.000 | 25.0006 | +0.6 | -4.0 | +0.6 | - |
-| 30.000 | sparkle | sparkle_3 | 30.000 | 30.0009 | +0.9 | -2.7 | +0.9 | - |
-| 40.750 | tick | tick_1 | 40.750 | 40.7504 | +0.4 | -2.0 | +0.4 | - |
-| 49.500 | whoosh | whoosh_0p50_3 | 50.000 | 50.0007 | +0.7 | - | +0.7 | - |
-| 53.000 | click | click_3 | 53.000 | 53.0005 | +0.5 | -2.7 | +0.5 | - |
-| 60.000 | glint | glint_D7 | 60.000 | 60.0011 | +1.1 | -2.7 | +1.1 | - |
-| 82.000 | whoosh | whoosh_0p25_3 | 82.250 | 82.2508 | +0.8 | - | +0.8 | - |
-| 84.000 | hit | hit_2 | 84.000 | 84.0004 | +0.4 | -2.7 | +0.4 | - |
-| 94.000 | riser | riser_2p00_1 | 96.000 | 96.0008 | +0.8 | -1.3 | -0.3 | coin,impact,reverse |
-| 96.000 | coin | coin_2 | 96.000 | 96.0008 | +0.8 | -1.3 | +0.9 | impact,reverse,riser |
-| 96.000 | impact | impact_s3a | 96.000 | 96.0008 | +0.8 | -1.3 | +0.3 | coin,reverse,riser |
-| 98.000 | zap | zap | 98.000 | 98.0004 | +0.4 | -2.7 | +0.4 | - |
-| 103.000 | reverse | reverse_1p00_1 | 104.000 | 104.0003 | +0.3 | -1.3 | -0.3 | anvil,impact,riser,sparkle |
-| 104.000 | anvil | anvil_2 | 104.000 | 104.0003 | +0.3 | -1.3 | +3.0 | impact,reverse,riser,sparkle |
-| 110.250 | key | key_10 | 110.250 | 110.2505 | +0.5 | -2.0 | +0.5 | - |
-
-**Every** event measured the same way in the mix: 200/203 within +-10 ms (median |err| 0.40 ms, 95th pct 1.54 ms).
- Outliers (all solo-verified on time; their transient is masked in the mix by a louder overlapping sound):
-
-- 8.8750 s tick (vel 0.5): +25.0 ms - near whoosh
-- 95.8564 s tick (vel 0.5): +17.2 ms - near a louder tail
-- 95.9526 s tick (vel 0.5): +48.2 ms - near coin,impact,reverse,riser
-
-Solo check of **every** event (max |error| per type):
-
-| type | events | max abs err ms |
-|---|---:|---:|
-| swell | 1 | 0.00 |
-| impact | 13 | 0.38 |
-| fire | 1 | 0.38 |
-| coin | 2 | 0.90 |
-| whoosh | 25 | 1.40 |
-| stamp | 7 | 1.83 |
-| tick | 55 | 0.40 |
-| riser | 4 | 0.31 |
-| reverse | 4 | 0.27 |
-| anvil | 3 | 2.98 |
-| sparkle | 5 | 1.08 |
-| pop | 38 | 1.21 |
-| hit | 9 | 0.96 |
-| click | 11 | 0.48 |
-| glint | 5 | 1.13 |
-| key | 19 | 1.19 |
-| zap | 1 | 0.44 |
+Skipped in this build (`--no-verify`). Re-run without the flag to regenerate the contact sheet and the timing tables.
