@@ -14,3 +14,4 @@ out/contact/frames_*/
 out/.snapshot_*/
 out/*.log
 out/chunks*/
+out/.render_*/
