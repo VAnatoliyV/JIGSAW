@@ -600,7 +600,7 @@
     const ulA = anchor(world, 8);
     const ulW = S2.w * 0.86, ulH = Math.max(3, 6 * U);
     const ulBar = el('div', 'abs', ulA, { left: -ulW / 2 + 'px', top: -ulH / 2 + 'px', width: ulW + 'px', height: ulH + 'px', transformOrigin: '0 50%', background: 'linear-gradient(90deg, rgba(238,188,78,0), #f5d47e 12%, #eebc4e 88%, rgba(238,188,78,0))', boxShadow: '0 0 18px rgba(238,188,78,.75)' });
-    const S0 = L ? 1.35 : 1.18;   // stamp entry scale: the entering line stays inside the frame
+    const S0 = Math.min(L ? 1.25 : 1.12, W * 0.92 / Math.max(S1.w, S2.w));   // stamp entry scale (fully visible on the hit): the line stays inside the frame
     // ---- kinetic line + URL ----
     const flHTML = P ? '<span>FREE</span><span class="dot">·</span><span>IN YOUR BROWSER</span><br><span>9 LANGUAGES</span>'
       : '<span>FREE</span><span class="dot">·</span><span>IN YOUR BROWSER</span><span class="dot">·</span><span>9 LANGUAGES</span>';
@@ -721,10 +721,11 @@
       [[S1, TS1, -1.5, -1, 's1'], [S2, TS2, 1.5, 1, 's2']].forEach(([T, t0, rot, dir, key]) => {
         const st = STAMP[key], d = t - t0;
         if (d < 0) { T.a.style.opacity = 0; return; }
-        const land = d < 0.09 ? lerp(S0, 1, E.inQ(d / 0.09)) : 1 + 0.03 * Math.exp(-(d - 0.09) * 16) * Math.sin((d - 0.09) * 55);
-        const ein = d < 0.09 ? clamp(0.15 + 0.85 * (S0 - land) / (S0 - 1) * (S0 - land) / (S0 - 1)) : 1;   // under .5 until the scale is below ~1.2
+        // fully inked ON the stamp hit (d = 0): a touch large + bright, settling with a little wobble
+        const LAND = 0.07;
+        const land = d < LAND ? lerp(S0, 1, E.outQ(d / LAND)) : 1 + 0.03 * Math.exp(-(d - LAND) * 16) * Math.sin((d - LAND) * 55);
         // whoosh: the stamps blow past the camera as the CTA comes in
-        tf(T.a, { x: st.x + dir * out * W * 0.12, y: st.y, s: land * punch * (1 + 0.3 * out), r: rot, o: ein * (1 - out), blur: (d < 0.09 ? (1 - d / 0.09) * 6 : 0) + out * 16 });
+        tf(T.a, { x: st.x + dir * out * W * 0.12, y: st.y, s: land * punch * (1 + 0.3 * out), r: rot, o: 1 - out, blur: (d < LAND ? (1 - d / LAND) * 2 : 0) + out * 16, bright: 1 + 0.7 * Math.exp(-d / 0.08) });
       });
       const s2p = seg(t, SH_T, SH_T + 0.6, E.ioQ); s2Sheen.style.opacity = s2p > 0 && s2p < 1 ? 1 : 0; s2Sheen.style.backgroundPosition = `${(100 - 100 * s2p).toFixed(1)}% 0`;
       const ulp = seg(t, UL_T, UL_T + 0.12, E.outE);

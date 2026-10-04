@@ -62,7 +62,8 @@
     const title = el('img', 'abs', Lr); if (tp) { title.src = tp.img; title.style.width = tp.rect[2] * tScale + 'px'; title.style.height = tp.rect[3] * tScale + 'px'; }
     const titleY = center[1] + 22 * scale + (P ? 150 : 110) * U;
     title.style.left = (W / 2 - (tp ? tp.rect[2] * tScale : 0) / 2) + 'px'; title.style.top = (titleY - (tp ? tp.rect[3] * tScale : 0) / 2) + 'px';
-    const sub = el('img', 'abs', Lr); const sScale = tScale * 0.95;
+    // the subtitle crop is much wider than the wordmark: never wider than 86% of the frame (QA limit 88%)
+    const sub = el('img', 'abs', Lr); const sScale = sp ? Math.min(tScale * 0.95, W * 0.86 / sp.rect[2]) : tScale * 0.95;
     if (sp) { sub.src = sp.img; sub.style.width = sp.rect[2] * sScale + 'px'; sub.style.height = sp.rect[3] * sScale + 'px'; sub.style.left = (W / 2 - sp.rect[2] * sScale / 2) + 'px'; sub.style.top = (titleY + (tp ? tp.rect[3] * tScale : 0) * 0.62) + 'px'; }
     // sparks from the strike point
     const strikePt = [A.x + (AJLogo.HIT_X + 0.5) * scale, A.y + (AJLogo.ANVIL_TOP) * scale];
@@ -121,8 +122,9 @@
       tf(ring, { s: 0.15 + 1.5 * rp, o: t >= STRIKE ? (1 - rp) : 0 });
       // wordmark
       if (tp) {
-        const a = spring(t - 18.0, 2.6, 0.55);
-        let o = { s: (1.25 - 0.25 * a), o: t >= 18.0 ? clamp(a * 3) : 0, blur: (1 - clamp(a)) * 8 };
+        // fully present ON the 18.0 hit: full opacity, a touch large (still inside the frame), bright, settling
+        const a = spring(t - 18.0, 2.6, 0.55), s0 = Math.min(1.25, W * 0.92 / titleW), d = t - 18.0;
+        let o = { s: (s0 - (s0 - 1) * a), o: t >= 18.0 ? 1 : 0, blur: (1 - clamp(a)) * 3, bright: 1 + (d >= 0 ? 0.8 * Math.exp(-d / 0.1) : 0) };
         const tr = piece('title').rect;
         const [sx, sy] = toScreen(20.0, tr[0] + tr[2] / 2, tr[1] + tr[3] / 2);
         const ts = (tr[2] * camAt(20.0).z) / (tr[2] * tScale);

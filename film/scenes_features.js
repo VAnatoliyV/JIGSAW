@@ -4,9 +4,10 @@
 //                          row → the camera lands on unit cost / sweet spot / full batch on the VO.
 //   02 BLACK MARKET 48–64  title card in Caerleon red → home card click → table → Gear chip → sort (re-sort ticks,
 //                          column callouts on the VO) → the top item's price card: buy-city row, Black Market row.
-//   03 ANY PRICE    64–80  title card → search box click → "mas cap" typed key by key (one capture per key) →
-//                          "Master's Cape" → the 7 city rows + Black Market row wipe in on the pops → best price →
-//                          "NO SPREADSHEETS. / NO GUESSWORK." flourish.
+//   03 ANY PRICE    64–80  title card → search box click → "mas cap" typed key by key (one capture per key, echoed by a
+//                          gold pill on a clear part of the page) → "Master's Cape" → the 7 city rows + Black Market
+//                          row wipe in on the pops → best price (a capture without prices: "7 CITIES + BLACK MARKET" on
+//                          the rows instead) → "NO SPREADSHEETS. / NO GUESSWORK." flourish on a dark scrim.
 // States come from the manifest through pick() (first existing, non-stale preferred). A missing state is never
 // added (no console warning): the previous state holds, animations that need it are skipped, and the VO words
 // that would have pointed at it become kinetic type instead.
@@ -219,7 +220,9 @@
       padding: `${tagS * 0.34}px ${tagS * 0.62}px ${tagS * 0.26}px`, boxShadow: `0 10px 30px rgba(0,0,0,.55), 0 0 24px rgba(${rgb},.18)`, zIndex: 6, letterSpacing: '.06em' });
     tag.innerHTML = `<span style="color:rgb(${rgb})">${num}</span>&nbsp;&nbsp;${name}`;
     const tagW = tag.offsetWidth, tagH = tag.offsetHeight;
-    tag.style.left = BOX.x + 34 * U + 'px'; tag.style.top = BOX.y - tagH / 2 + 'px';
+    // the tab sits just ABOVE the panel's top edge (outside the window), so it never covers a line of the page (the
+    // page's "Loading prices: N of 211 requests…" status line runs along the top of most shots)
+    tag.style.left = BOX.x + 34 * U + 'px'; tag.style.top = BOX.y - tagH - 9 * U + 'px';
     const cur = Cursor(free, (P ? 62 : 50) * U);
     const mb = motionBlur();
     let c = [PW / 2, VH / 2, 1];
@@ -250,7 +253,9 @@
         view.frame.style.filter = x > 1.2 || y > 1.2 ? mb.url : 'none';
         mb.set(x > 1.2 ? x : 0, y > 1.2 ? y : 0);
       },
-      camBlur(camF, t) {
+      // (cuts: times of hard camera cuts; no speed blur across a cut, the new framing is sharp on its first frame)
+      camBlur(camF, t, cuts) {
+        if (cuts && cuts.some(tc => tc > t - 1 / 30 - 1e-6 && tc <= t + 1e-6)) return pn.blur(0, 0);
         const c1 = camF(t), c0 = camF(t - 1 / 30);
         const dx = (c1[0] - c0[0]) * c1[2], dy = (c1[1] - c0[1]) * c1[2], dz = Math.abs(Math.log(c1[2] / c0[2])) * Math.min(BOX.w, BOX.h) * 0.5;
         pn.blur(Math.abs(dx) * 0.2 + dz * 0.1, Math.abs(dy) * 0.2 + dz * 0.1);
@@ -261,7 +266,8 @@
 
   // gold outline that frames a target (screen rect), clipped to the panel
   function Mark(pn, rgb = '245,212,126') {
-    const e = el('div', 'abs', pn.clipL, { border: `${Math.max(2, 3 * U)}px solid rgb(${rgb})`, borderRadius: 10 * U + 'px', boxShadow: `0 0 26px rgba(${rgb},.55), inset 0 0 18px rgba(${rgb},.18)`, opacity: 0, transformOrigin: '50% 50%' });
+    // (border-box: the border sits inside the set rect, so the outline is centred on the target on all four sides)
+    const e = el('div', 'abs', pn.clipL, { border: `${Math.max(2, 3 * U)}px solid rgb(${rgb})`, borderRadius: 10 * U + 'px', boxSizing: 'border-box', boxShadow: `0 0 26px rgba(${rgb},.55), inset 0 0 18px rgba(${rgb},.18)`, opacity: 0, transformOrigin: '50% 50%' });
     return { e, set(r, o, s = 1, pad = 7 * U) {
       if (!r || o <= 0.002) { e.style.opacity = 0; return; }
       e.style.left = (r[0] - BOX.x - pad) + 'px'; e.style.top = (r[1] - BOX.y - pad) + 'px'; e.style.width = (r[2] + 2 * pad) + 'px'; e.style.height = (r[3] + 2 * pad) + 'px';
@@ -293,6 +299,25 @@
       e.style.opacity = clamp(o).toFixed(3);
     } };
   }
+  // soft dark scrim (screen rect, clipped to the panel) under kinetic words that sit over the page: whatever page text
+  // is under the words sinks into it, so the words and the UI never fight
+  // (a word block nearly as wide as the panel gets a full-width band with soft top / bottom edges instead of an oval,
+  // so nothing at the panel's sides peeks out next to the words)
+  function Scrim(pn, a = 0.9) {
+    const oval = `radial-gradient(closest-side, rgba(5,6,10,${a}) 0%, rgba(5,6,10,${(a * 0.88).toFixed(2)}) 70%, rgba(5,6,10,0) 100%)`;
+    const band = `linear-gradient(180deg, rgba(5,6,10,0) 0%, rgba(5,6,10,${a}) 24%, rgba(5,6,10,${a}) 76%, rgba(5,6,10,0) 100%)`;
+    const e = el('div', 'abs', pn.clipL, { opacity: 0 });
+    return { set(cx, cy, w, h, o) {
+      if (o <= 0.002) { e.style.opacity = 0; return; }
+      const wide = w > BOX.w * 0.8;
+      if (wide) { cx = BOX.x + BOX.w / 2; w = BOX.w; }
+      e.style.background = wide ? band : oval; e.style.borderRadius = wide ? '0' : '50%';
+      e.style.left = (cx - w / 2 - BOX.x) + 'px'; e.style.top = (cy - h / 2 - BOX.y) + 'px'; e.style.width = w + 'px'; e.style.height = h + 'px';
+      e.style.opacity = clamp(o).toFixed(3);
+    } };
+  }
+  // the cursor stays inside the panel (its tip at least a margin from the edges, room for the arrow on the right/bottom)
+  const curIn = (x, y) => [clamp(x, BOX.x + 26 * U, BOX.x + BOX.w - 74 * U), clamp(y, BOX.y + 26 * U, BOX.y + BOX.h - 84 * U)];
   // one spotlight gliding from target to target: list [{t0, t1, r (page rect)}]
   function spotRun(spot, pn, t, list) {
     list = list.filter(x => x.r);
@@ -340,6 +365,19 @@
   }
   const CO = (P ? 44 : S ? 34 : 32) * U;   // callout type size
   const callout = (parent, str, k = 1) => { const c = Callout(parent, str, CO * k); c.wrap.style.opacity = 0; return c; };
+  // the same gold label on one or more lines ('|' breaks), same set() contract as Callout
+  function calloutL(parent, str, k = 1) {
+    const size = CO * k;
+    const wrap = el('div', 'abs', parent, { zIndex: 70, opacity: 0 });
+    const tag = el('div', 'px', wrap, { fontSize: size + 'px', lineHeight: 1.08, textAlign: 'center', color: '#0b0d12', background: '#eebc4e', padding: `${0.2 * size}px ${0.42 * size}px ${0.14 * size}px`, borderRadius: `${0.18 * size}px`, boxShadow: '0 10px 30px rgba(0,0,0,.5), 0 0 30px rgba(238,188,78,.35)', whiteSpace: 'nowrap' });
+    tag.innerHTML = str.split('|').map(s => s.replace(/&/g, '&amp;')).join('<br>');
+    const w = tag.offsetWidth, h = tag.offsetHeight;
+    return { wrap, w, h, set(t, t0, t1, x, y) {
+      const a = spring(t - t0, 3.2, 0.5), b = seg(t, t1 - 0.2, t1, E.inC);
+      wrap.style.left = (x - w / 2) + 'px'; wrap.style.top = (y - h / 2) + 'px';
+      tf(wrap, { y: (1 - a) * 30 * U, s: 0.6 + 0.4 * a - 0.2 * b, o: (t < t0 ? 0 : 1) * (1 - b) });
+    } };
+  }
   // set a callout, then dim it (earlier labels of a stack stay on screen, quieter)
   function coSet(co, t, t0, t1, x, y, dim = 1) {
     co.set(t, t0, t1, x, y);
@@ -477,7 +515,7 @@
       WebkitMaskImage: 'radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 2%, #000 9%, rgba(0,0,0,.45) 20%, rgba(0,0,0,0) 33%)', maskImage: 'radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 2%, #000 9%, rgba(0,0,0,.45) 20%, rgba(0,0,0,0) 33%)' });
     const glow = el('div', 'fill', root, { background: `radial-gradient(${P ? '75% 42%' : L ? '48% 60%' : '62% 55%'} at 50% 46%, rgba(${rgb},.30) 0%, rgba(${rgb},.09) 42%, rgba(${rgb},0) 72%)` });
     if (c.red) el('div', 'fill', root, { background: 'radial-gradient(90% 60% at 50% 110%, rgba(150,20,24,.42) 0%, rgba(80,8,12,.18) 45%, rgba(0,0,0,0) 75%), radial-gradient(60% 40% at 50% -10%, rgba(120,16,20,.3) 0%, rgba(0,0,0,0) 70%)' });
-    const ring = el('div', 'abs', root, { width: 900 * U + 'px', height: 900 * U + 'px', borderRadius: '50%', border: `${9 * U}px solid rgba(${c.ringRgb || '255,236,190'},.9)`, boxShadow: `0 0 60px rgba(${rgb},.8)`, opacity: 0 });
+    const ring = el('div', 'abs', root, { width: 900 * U + 'px', height: 900 * U + 'px', borderRadius: '50%', boxSizing: 'border-box', border: `${9 * U}px solid rgba(${c.ringRgb || '255,236,190'},.9)`, boxShadow: `0 0 60px rgba(${rgb},.8)`, opacity: 0 });
     const streak = el('div', 'abs', root, { width: W * 1.3 + 'px', height: 5 * U + 'px', left: -W * 0.15 + 'px', background: `linear-gradient(90deg, rgba(${rgb},0), rgba(255,246,220,.95) 50%, rgba(${rgb},0))`, boxShadow: `0 0 40px rgba(${rgb},.9)`, opacity: 0 });
     // --- type ---
     const block = el('div', 'abs', root, { width: '0px', height: '0px', left: W / 2 + 'px', top: H * 0.46 + 'px' });
@@ -654,6 +692,9 @@
       }
       return null;
     })();
+    // a button (not a whole card) keeps its plain look through the press: the hover capture's gold-on-gold label (the
+    // site's own :hover style) is unreadable, and the plain crop sits exactly on the pressed rect the click mark frames
+    const preHold = !!(pre && goR && goR[2] <= 300);
     // ---- the table pushes in over the loading state ----
     const tabTop = (() => { const r = uni([rectOf(sTable, 'th'), rowRects(sTable)[0], vis(rectOf(sTable, 'skel'), sTable)]); return r ? Math.max(0, r[1] - 10) : VH * 0.45; })();
     const pushBox = el('div', 'abs', pn.view.inner, { left: '0px', top: '0px', zIndex: 3 });
@@ -672,10 +713,13 @@
     // ---- camera ----
     const [cx0] = colOf(sTable);
     const camHome = cfg.homeFrame(sHome, goR, goAt);
-    const camLoad = cfg.loadFrame ? cfg.loadFrame(sLoad) : (sLoad ? cam(sLoad, camHome[0], camHome[1], camHome[2]) : camHome);
+    let camLoad = cfg.loadFrame ? cfg.loadFrame(sLoad) : (sLoad ? cam(sLoad, camHome[0], camHome[1], camHome[2]) : camHome);
     const grp0 = uni(rectsOf(sTable, 'grp'));
     const secTop = (rectOf(sTable, 'task') || grp0 || [0, VH * 0.3])[1];
     const camSec = keep(sTable, topLeft(sTable, cx0, secTop, FW.sec), chipAt && chipAt[0], chipAt && chipAt[1]);
+    // loadCut: the cut lands on the loading page's populated top, a touch wider than the section framing it then
+    // settles into (status line, description, chips, filters: the same layout the table pushes in under)
+    if (cfg.loadCut && sLoad) camLoad = zoomed(sLoad, cam(sLoad, camSec[0], camSec[1], camSec[2]), 0.94);
     const thB = uni(rectsOf(sBefore, 'th').map(r => vis(r, sBefore))) || skelTop;
     const thY = thB ? thB[1] : (grp0 ? grp0[1] + grp0[3] + 60 : VH * 0.5);
     // rows framing: the header + the 8 rows, the band's bottom near the view's bottom (chips / filters above); on
@@ -692,14 +736,17 @@
     const camSort = rowsCam(sRows, cfg.cols.sort);
     const camTop = keep(sRows, rowsCam(sRows, cfg.cols.top), openAt && openAt[0], openAt && openAt[1], 110 * U);
     // (each feature adds its own keys from the sort to the open click)
-    const keys = [
-      [T.in - 0.2, camHome], [T.c1 + 0.04, camHome],
-      [T.c1 + 0.08, camLoad, E.lin], [T.tab - 0.05, camLoad],
+    // cfg.loadCut: the camera cuts with the page on the click frame (the home framing would show an empty part of
+    // the loading page: blank sidebar + skeleton rows), straight onto the loading page's populated top
+    const keys = (cfg.loadCut ? [[T.in - 0.2, camHome], [T.c1 - 0.002, camHome], [T.c1, camLoad, E.lin]]
+      : [[T.in - 0.2, camHome], [T.c1 + 0.04, camHome], [T.c1 + 0.08, camLoad, E.lin]]).concat([
+      [T.tab - 0.05, camLoad],
       [T.tab + 0.45, camSec, E.ioC],
       [T.chip - 0.75, zoomed(sTable, camSec, 1.02), E.ioQ], [T.chip + 0.12, zoomed(sTable, camSec, 1.02)],
       [T.chip + 1.1, camRows, E.ioC], [T.sort - 0.02, zoomed(sBefore, camRows, 1.01), E.lin],
       [T.sort + 0.5, camSort, E.ioC],
-    ];
+    ]);
+    const camCuts = cfg.loadCut ? [T.c1] : [];
     const P0 = goAt || [PW / 2, VH / 2];
     const pts = [[T.in + 0.3, P0[0] + PW * 0.5, P0[1] + VH * 0.32], [T.c1 - 0.28, P0[0] + 4, P0[1] + 3], [T.c1, ...P0], [T.c1 + 0.12, ...P0]];
     if (chipAt) pts.push([T.tab + 0.45, chipAt[0] + PW * 0.25, chipAt[1] + VH * 0.12], [T.chip - 0.3, chipAt[0] + 2, chipAt[1] + 2], [T.chip, ...chipAt], [T.chip + 0.15, ...chipAt]);
@@ -716,7 +763,7 @@
       return [r && d < 0.55 ? [r[0] + dx, r[1], r[2], r[3]] : null, 1 - seg(d, 0.22, 0.55), 1.1 - 0.1 * E.outC(clamp(d / 0.2))];
     };
     const marks = [goR && press(T.c1, goR), chipR && stay(T.chip, chipR), sortAt && sortMark, openR && press(T.open, openR)].filter(Boolean).map(f => ({ f, m: Mark(pn) }));
-    return { pn, T, cuts, keys, pts, clicks, marks, rs, pre, pushBox, pushMb, pushOld, pushNew, tabTop, sHome, sLoad, sTable, sGrp, sSort, sOpen, sRows, sBefore, rowsAfter, openAt, openR, camSort, camTop, cx0, goAt, thY };
+    return { pn, T, cuts, keys, camCuts, pts, clicks, marks, rs, pre, preHold, pushBox, pushMb, pushOld, pushNew, tabTop, sHome, sLoad, sTable, sGrp, sSort, sOpen, sRows, sBefore, rowsAfter, openAt, openR, camSort, camTop, cx0, goAt, thY };
   }
 
   // per-frame driver shared by both table features
@@ -724,13 +771,17 @@
     const { pn, T } = F;
     const c = camF(t);
     pn.setCam(c);
-    pn.camBlur(camF, t);
+    pn.camBlur(camF, t, F.camCuts);
     // states (the re-sort draws its own base while it runs)
     if (F.rs && F.rs.on(t)) pn.mix({ __top: null });
     else pn.mix(mixAt(F.cuts, t));
     if (F.rs) F.rs.set(t);
     // pre-hover crop, until the cursor reaches the target
-    if (F.pre) F.pre.w.style.opacity = clamp(1 - (t - (T.c1 - 0.22)) / 0.08).toFixed(3);
+    // (a held button stays up to the cut and dips a little on the press)
+    if (F.pre) {
+      F.pre.w.style.opacity = F.preHold ? (t < T.c1 ? 1 : 0) : clamp(1 - (t - (T.c1 - 0.22)) / 0.08).toFixed(3);
+      if (F.preHold) tf(F.pre.w, { s: 1 - 0.035 * seg(t, T.c1 - 0.1, T.c1 - 0.04, E.outQ) });
+    }
     // table push (old skeleton out to the left, populated table in from the right)
     const pp = seg(t, T.tab, T.tab + 0.3, E.ioC), pushing = t >= T.tab && t < T.tab + 0.3;
     if (F.pushNew) { F.pushNew.w.style.opacity = pushing ? 1 : 0; tf(F.pushNew.w, { x: (1 - pp) * PW }); }
@@ -739,7 +790,7 @@
     F.pushBox.style.filter = vb > 0.8 ? F.pushMb.url : 'none'; F.pushMb.set(vb, 0);
     // cursor
     const [px, py] = cursorPath(t, F.pts);
-    const [sx, sy] = pn.scr(px, py);
+    const [sx, sy] = curIn(...pn.scr(px, py));
     pn.cur.set(t, sx, sy, F.clicks, curO(t));
     for (const mk of F.marks) { const [r, o, s] = mk.f(t); mk.m.set(r ? pn.scrR(r) : null, o, s); }
     return c;
@@ -796,7 +847,8 @@
     // fallback (no expanded-row capture): the three words as kinetic type over the dimmed panel
     const fb = haveDet ? null : targets.map((tg, i) => word(pn.free, tg.s, (P ? 92 : 70) * U, 'px ' + (i === 1 ? 'gold' : ''), { color: '#f2f4f8', filter: 'drop-shadow(0 10px 30px rgba(0,0,0,.9))' }, 9));
     if (fb) fb.forEach(w => { w.a.style.opacity = 0; });
-    const fbDim = el('div', 'abs', pn.clipL, { left: '0px', top: '0px', width: BOX.w + 'px', height: BOX.h + 'px', background: 'rgba(5,6,10,.62)', opacity: 0 });
+    const fbDim = el('div', 'abs', pn.clipL, { left: '0px', top: '0px', width: BOX.w + 'px', height: BOX.h + 'px', background: 'rgba(5,6,10,.7)', opacity: 0 });
+    const fbScrim = fb ? Scrim(pn) : null;
     // ---- camera ----
     const keys = F.keys.slice();
     // re-sort on the sort framing, then (1:1) a glide to the names for the top row, hold through the open click
@@ -864,8 +916,12 @@
           if (tg.tg != null) tg.g.set(t, tg.tg, r);
         });
       } else {
-        fbDim.style.opacity = (0.95 * seg(t, W1 - 0.3, W1) * (1 - seg(t, T.out - 0.2, T.out))).toFixed(3);
+        const fo = seg(t, W1 - 0.3, W1) * (1 - seg(t, T.out - 0.2, T.out));
+        fbDim.style.opacity = (0.95 * fo).toFixed(3);
         const cy = BOX.y + BOX.h * 0.5, gap = (P ? 120 : 86) * U;
+        // the three lines sit on a dark scrim (the page text under them sinks away)
+        const fw = Math.max(...fb.map(w => w.w)), fh = fb[0].h;
+        fbScrim.set(W / 2, cy, Math.min(BOX.w * 1.08, fw * 1.5 + 4 * fh), 2 * gap + fh * 5, fo);
         fb.forEach((w, i) => {
           const a = spring(t - targets[i].tw, 3.2, 0.5);
           tf(w.a, { x: W / 2, y: cy + (i - 1) * gap + (1 - a) * 40 * U, s: 0.7 + 0.3 * a, o: t >= targets[i].tw ? clamp(a * 2) * (1 - seg(t, T.out - 0.2, T.out)) : 0 });
@@ -881,7 +937,8 @@
       // 1:1: quality / buy / profit columns while the rows re-sort and the VO names them; the names for the open click
       cols: S ? { pre: ['q', 'buy', 'net'], sort: ['q', 'buy', 'net'], top: ['item', 'net'] } : { pre: ['item', 'net'], sort: ['item', 'net'], top: ['item', 'net'] },
       homeFrame: (n, goR) => goR ? frame(n, grow(goR, Math.max(30, PW * 0.04), Math.max(goR[3] * 0.9, 120)), 0.08, ZMAX, 0.5) : vpCam(n),
-      loadFrame: n => vpCam(n) });
+      // (the click cuts straight onto the loading page's populated top, never the skeleton-only part under the card)
+      loadCut: true });
     const { pn, sOpen, sRows } = F;
     // ---- VO v11 on the sorted table: where to buy, which quality, what you keep after tax ----
     const v11 = voT('v11', 54.4);
@@ -925,7 +982,8 @@
     // fallback (no price-card capture): the two card lines as kinetic type over the dimmed panel
     const fb = sOpen && cardR ? null : cardT.map((ct, i) => word(pn.free, i ? 'SELL TO THE BLACK MARKET' : 'BUY IN ANY CITY', fitDom(pn.free, 'SELL TO THE BLACK MARKET', 'px', {}, BOX.w * 0.86, (P ? 76 : 60) * U), 'px', { color: i ? '#e46f61' : '#f2f4f8', filter: 'drop-shadow(0 10px 30px rgba(0,0,0,.9))' }, 9));
     if (fb) fb.forEach(w => { w.a.style.opacity = 0; });
-    const fbDim = el('div', 'abs', pn.clipL, { left: '0px', top: '0px', width: BOX.w + 'px', height: BOX.h + 'px', background: 'rgba(5,6,10,.62)', opacity: 0 });
+    const fbDim = el('div', 'abs', pn.clipL, { left: '0px', top: '0px', width: BOX.w + 'px', height: BOX.h + 'px', background: 'rgba(5,6,10,.7)', opacity: 0 });
+    const fbScrim = fb ? Scrim(pn) : null;
     // ---- camera: the column framing holds while the labels are up; 1:1 widens to the clicked name just before the click ----
     const keys = F.keys.slice();
     const ticks = evIn('tick', T.sort, T.open), lastTick = ticks.length ? ticks[ticks.length - 1] : T.sort + 2.25;
@@ -971,7 +1029,11 @@
       });
       spotRun(cardSpot, pn, t, cardList);
       if (fb) {
-        fbDim.style.opacity = (0.95 * seg(t, T.g1 - 0.3, T.g1) * (1 - seg(t, T.out - 0.2, T.out))).toFixed(3);
+        const fo = seg(t, T.g1 - 0.3, T.g1) * (1 - seg(t, T.out - 0.2, T.out));
+        fbDim.style.opacity = (0.95 * fo).toFixed(3);
+        // both lines on a dark scrim (the filters / status lines under them sink away)
+        const fw = Math.max(...fb.map(w => w.w)), fh = fb[0].h, gap = (P ? 120 : 90) * U;
+        fbScrim.set(W / 2, BOX.y + BOX.h * 0.5, Math.min(BOX.w * 1.08, fw * 1.3 + 4 * fh), gap + fh * 5.6, fo);
         fb.forEach((w, i) => {
           const a = spring(t - cardT[i].tw, 3.2, 0.5);
           tf(w.a, { x: W / 2, y: BOX.y + BOX.h * 0.5 + (i - 0.5) * (P ? 120 : 90) * U + (1 - a) * 40 * U, s: 0.7 + 0.3 * a, o: t >= cardT[i].tw ? clamp(a * 2) * (1 - seg(t, T.out - 0.2, T.out)) : 0 });
@@ -1014,7 +1076,7 @@
     const bmT = vis(rectOf(sCard, 'bmTable'), sCard) || vis(uni(rectsOf(sCard, 'bmRow')), sCard);
     const lastCity = cityRows[cityRows.length - 1];
     // without a Black Market table (no trades recorded) the 8th pop reveals the note under the city table
-    const bmFallback = !bmT && lastCity ? (() => { const y0 = lastCity[1] + lastCity[3], cr = vis(rectOf(sCard, 'card'), sCard); const y1 = cr ? Math.min(cr[1] + cr[3], y0 + 46) : y0 + 40; return y1 - y0 > 8 ? [0, y0, PW, y1 - y0] : null; })() : null;
+    const bmFallback = !bmT && lastCity ? (() => { const y0 = lastCity[1] + lastCity[3], cr = vis(rectOf(sCard, 'card'), sCard); const y1 = cr ? Math.min(cr[1] + cr[3], y0 + 38) : y0 + 38; return y1 - y0 > 8 ? [0, y0, PW, y1 - y0] : null; })() : null;
     const bands = [...cityRows, bmT || bmFallback].filter(Boolean).map(r => [0, r[1], PW, r[3]]);
     const inner = pn.view.inner;
     // the card without those bands: crops of the gaps between them
@@ -1030,25 +1092,117 @@
       edge: el('div', 'abs', inner, { left: '0px', top: r[1] + 'px', width: Math.max(2, 2.5 / zOf(sCard, FW.card) * U) + 'px', height: r[3] + 'px', zIndex: 6, background: '#fff3cf', boxShadow: '0 0 12px 3px rgba(245,212,126,.95)', opacity: 0 }) })) : [];
     const revealDone = rowCrops.length ? rowCrops[rowCrops.length - 1].t0 + 0.3 : T.cardWh;
     const band = bands.length ? uni(bands) : null;
-    // ---- best price: the city named in "cheapest to buy" ----
+    // ---- after the reveal: what the card says. With price data, the city named in "cheapest to buy" gets the best-price
+    // callout. When the capture has none (the chip reads "cheapest to buy: none", stale capture) nothing points at a
+    // missing value: the 7 city rows + the Black Market line are framed with a true line about what the card covers ----
     const cityNames = labelsOf(sCard, 'cityName'), cheap = labelsOf(sCard, 'chips')[0] || '';
-    const bi = cityNames.findIndex(nm => nm && cheap.includes(nm));
-    const bestRow = bi >= 0 ? vis(rectsOf(sCard, 'cityRow')[bi], sCard) : vis(rectOf(sCard, 'chips', 0), sCard);
-    const camBest = bestRow ? rowShot(sCard, bestRow, FW.row, P ? 60 : 30) : null;
-    const bestR = bestRow && inView(bestRow, camBest);
-    const bestCo = callout(pn.free, bi >= 0 ? 'BEST PRICE' : 'CHEAPEST TO BUY');
-    const bestMark = Mark(pn), bestG = Glint(pn), bestSpot = Spot(pn, 0.55);
-    // ---- kinetic echo of the typed letters: a gold Pixelify HUD in the space above the search card's heading (the
-    // typing shot leaves room for it), on a soft dark backdrop ----
-    const echoS = (P ? 82 : S ? 64 : 66) * U;
+    const cheapVal = (cheap.split(/[:：]/)[1] || '').trim();
+    const priced = !!sCard && !ST(sCard).stale && !!cheapVal && !/^(none|n\/a|—|–|-|нет)$/i.test(cheapVal);
+    const bi = priced ? cityNames.findIndex(nm => nm && cheap.includes(nm)) : -1;
+    const cardR = vis(rectOf(sCard, 'card'), sCard);
+    const chipsR = uni(rectsOf(sCard, 'chips').map(r => vis(r, sCard)));
+    const tblR = vis(rectOf(sCard, 'priceTables'), sCard) || uni(cityRows);
+    // the table + the Black Market table / the "no Black Market trades" line under it (one text line)
+    const bmLine = bmT || (bmFallback ? [tblR ? tblR[0] : 0, bmFallback[1], tblR ? tblR[2] : PW, Math.min(bmFallback[3], 34)] : null);
+    const allR = (() => {
+      const r = uni([tblR, ...cityRows, bmLine]); if (!r) return null;
+      const x1 = Math.min(r[0] + r[2], cardR ? cardR[0] + cardR[2] - 6 : PW, PW - 4);
+      return [r[0], r[1], x1 - r[0], r[3]];
+    })();
+    const bandMode = !priced && !!(sCard && allR && cityRows.length);
+    const zCard = zOf(sCard, FW.card);
+    let camBest = null, bestR = null, bestCo = null, bestAt = null;
+    if (bandMode) {
+      // the card from its title to the Black Market line, at the card framing's zoom
+      const top = Math.min(chipsR ? chipsR[1] : allR[1], allR[1]);
+      let cy = (top + allR[1] + allR[3]) / 2;
+      // (16:9: the view is taller than the block, so it top-anchors on the card: the window's top edge stays in the gap
+      // above the card, under the page's description line, never through it)
+      if (L) {
+        const task = vis(rectOf(sCard, 'task'), sCard);
+        const y0 = cardR ? Math.max(cardR[1] - 12, task && task[1] < cardR[1] ? task[1] + task[3] + 3 : -1e9) : top - 40;
+        cy = Math.max(cy, y0 + BOX.h / 2 / zCard);
+      }
+      camBest = P ? cam(sCard, PW / 2, cy, zCard) : cam(sCard, (cardR ? cardR[0] : allR[0]) - 10 + BOX.w / 2 / zCard, cy, zCard);
+      // (the part of the block the shot shows: on 1:1 the table runs on past the panel's right edge)
+      bestR = inView(allR, camBest, 10);
+      // the label goes into the empty part of the card's head (right of the price chips, under the title row, clear of
+      // the "to search" button), never on the title / subtitle / chips / table: first a one-line label, else two lines
+      const label = cityRows.length + ' CITIES' + (bmT || bmFallback ? ' + BLACK MARKET' : '');
+      const cands = [callout(pn.free, label), ...(bmT || bmFallback ? [calloutL(pn.free, cityRows.length + ' CITIES +|BLACK MARKET', P ? 0.8 : 0.9)] : [])];
+      const c = camBest, z = c[2], hw = BOX.w / 2 / z, hh = BOX.h / 2 / z;
+      const vx0 = c[0] - hw + 16 / z, vx1 = c[0] + hw - 16 / z, vy0 = c[1] - hh + headroom(z), vy1 = c[1] + hh - 16 / z;
+      const icon = vis(rectOf(sCard, 'icon'), sCard), back = vis(rectOf(sCard, 'back'), sCard);
+      // the title + subtitle run from the icon up to ~240 css px right of it, above the chips
+      const head = icon ? [icon[0], icon[1] - 4, Math.max(icon[2] + 250, chipsR ? chipsR[0] + chipsR[2] - icon[0] : 0), (chipsR ? chipsR[1] : icon[1] + icon[3]) - icon[1] + 2] : null;
+      const busy = [head, grow(chipsR, 10, 6), grow(back, 10, 6), grow(allR, 0, 14)].filter(Boolean);
+      // (phones: the card's round "›" scroll button sits at its right edge, level with the chips: keep ~56 px clear)
+      const x0 = (chipsR ? chipsR[0] + chipsR[2] : (head ? head[0] + head[2] : allR[0])) + 18, x1 = Math.min(vx1, cardR ? cardR[0] + cardR[2] - (P ? 56 : 14) : vx1);
+      const y0 = Math.max(vy0, cardR ? cardR[1] + 8 : vy0), y1 = Math.min(vy1, allR[1] - 14);
+      const yPref = chipsR ? chipsR[1] + chipsR[3] / 2 : (y0 + y1) / 2;
+      search: for (const co of cands) {
+        const w = co.w / z, h = co.h / z;
+        let best = null;
+        for (let py = y0 + h / 2; py <= y1 - h / 2 + 0.01; py += 3) for (let px = x0 + w / 2; px <= x1 - w / 2 + 0.01; px += 6) {
+          const r = [px - w / 2, py - h / 2, w, h];
+          if (busy.some(b => ov(r, b) > 0)) continue;
+          const sc = Math.abs(py - yPref) + 0.25 * (px - (x0 + w / 2));
+          if (!best || sc < best.sc) best = { sc, px, py };
+        }
+        if (best) { bestCo = co; bestAt = [best.px, best.py]; break search; }
+      }
+      for (const co of cands) if (co !== bestCo) co.wrap.style.display = 'none';
+    } else {
+      const bestRow = bi >= 0 ? vis(rectsOf(sCard, 'cityRow')[bi], sCard) : vis(rectOf(sCard, 'chips', 0), sCard);
+      camBest = bestRow ? rowShot(sCard, bestRow, FW.row, P ? 60 : 30) : null;
+      bestR = bestRow && inView(bestRow, camBest);
+      bestCo = callout(pn.free, bi >= 0 ? 'BEST PRICE' : 'CHEAPEST TO BUY');
+    }
+    const bestMark = Mark(pn), bestG = Glint(pn), bestSpot = Spot(pn, bandMode ? 0.5 : 0.55);
+    // ---- kinetic echo of the typed letters: a gold Pixelify pill showing exactly what the field shows (the state on
+    // screen, key by key), on a clear part of the page: right of the suggestion names, under the search hint (empty in
+    // the first state, the rows' blank right part once the list is up) ----
+    const typedOf = n => (n && ST(n) && typeof ST(n).typed === 'string' ? ST(n).typed : '');
+    const fullTxt = typedOf(sLastQ) || 'mas cap';
+    const isQ = n => !!n && sQ.includes(n);
+    // the typing shot (camera framing as in v1, independent of the pill's size)
+    const echoS0 = (P ? 82 : S ? 64 : 66) * U, pillH0 = echoS0 * 1.0 + echoS0 * 0.36 * 1.24;
+    const headY = qR ? qR[1] - 46 : 0;   // the search card's heading sits ~40 px above the box
+    const camType = qR ? (() => {
+      const z = zOf(s0, FW.typ), yTop = headY - (pillH0 + 34 * U) / z - headroom(z) * 0.4;
+      return P ? cam(s0, PW / 2, yTop + BOX.h / 2 / z, z) : keep(s0, cam(s0, qR[0] - 40 + BOX.w / 2 / z, yTop + BOX.h / 2 / z, z), qR[0] + qR[2] / 2, qR[1]);
+    })() : null;
+    const echoPos = (() => {
+      if (!camType) return null;
+      const z = camType[2], hw = BOX.w / 2 / z;
+      const rows0 = rectsOf(sLastQ, 'sugg').map(r => vis(r, sLastQ)).filter(Boolean);
+      const q1 = sQ.find(Boolean), hint1 = q1 ? vis(rectOf(q1, 'hint'), q1) : null;
+      // where the names end: phones clip each name in its first cell; wide layouts: the longest name of any list
+      let nameR = rows0.length ? rows0[0][0] + 60 : PW * 0.5;
+      for (const n of sQ) for (const it of itemsOf(n)) {
+        const r = it.rect, cell = it.cells && it.cells[0];
+        if (!r) continue;
+        nameR = Math.max(nameR, cell && cell[2] < r[2] * 0.6 ? cell[0] + cell[2] : r[0] + 60 + 7.0 * (it.name || '').length);
+      }
+      const xL = nameR + 22, xR = Math.min(camType[0] + hw * 0.96 - 12 / z, rows0.length ? rows0[0][0] + rows0[0][2] - 14 : PW - 14);
+      return { xL, xR, z, hint1, rows0 };
+    })();
+    // size: the full query has to fit the clear strip (pill = text + caret + padding)
+    const probe = el('div', 'abs px', pn.free, { fontSize: '100px', lineHeight: 1, whiteSpace: 'nowrap', letterSpacing: '.04em', visibility: 'hidden' });
+    probe.textContent = fullTxt; const w100 = probe.offsetWidth; probe.remove();
+    const echoS = echoPos ? Math.min(echoS0, Math.max(30 * U, (echoPos.xR - echoPos.xL) * echoPos.z / (w100 / 100 + 0.155 + 0.72))) : echoS0;
+    const pillPad = echoS * 0.36, pillH = echoS * 1.0 + pillPad * 1.24;
+    if (echoPos) {
+      const { xL, xR, z, hint1, rows0 } = echoPos, ph = pillH / z;
+      echoPos.px = (xL + xR) / 2;
+      echoPos.py = Math.max(hint1 ? hint1[1] + hint1[3] + 8 + ph / 2 : 0, rows0.length ? rows0[0][1] + rows0[0][3] / 2 : 0);
+    }
     const echoA = el('div', 'abs', pn.free, { width: '0px', height: '0px', zIndex: 9 });
-    const echoBack = el('div', 'abs', echoA, { width: echoS * 9 + 'px', height: echoS * 3 + 'px', left: -echoS * 4.5 + 'px', top: -echoS * 1.5 + 'px', background: 'radial-gradient(50% 50% at 50% 50%, rgba(6,7,11,.75) 0%, rgba(6,7,11,.4) 55%, rgba(6,7,11,0) 100%)' });
-    const pill = el('div', 'abs', echoA, { background: 'rgba(12,14,20,.92)', border: `${Math.max(2, 2.5 * U)}px solid rgba(238,188,78,.7)`, borderRadius: echoS * 0.32 + 'px', boxShadow: '0 18px 50px rgba(0,0,0,.7), 0 0 34px rgba(238,188,78,.25)' });
+    const pill = el('div', 'abs', echoA, { background: 'rgba(12,14,20,.94)', border: `${Math.max(2, 2.5 * U)}px solid rgba(238,188,78,.7)`, borderRadius: echoS * 0.32 + 'px', boxShadow: '0 14px 36px rgba(0,0,0,.6), 0 0 26px rgba(238,188,78,.22)' });
     const echoT = el('div', 'abs px', echoA, { fontSize: echoS + 'px', lineHeight: 1, whiteSpace: 'nowrap', color: '#f5d47e', letterSpacing: '.04em' });
-    const echoChars = [...'mas cap'].map(ch => { const sp = el('span', '', echoT, { display: 'inline-block' }); sp.textContent = ch === ' ' ? ' ' : ch; return sp; });
+    const echoChars = [...fullTxt].map(ch => { const sp = el('span', '', echoT, { display: 'inline-block' }); sp.textContent = ch === ' ' ? '\u00a0' : ch; return sp; });
     const cum = echoChars.map(sp => sp.offsetLeft + sp.offsetWidth), echoH = echoT.offsetHeight;
     const caret = el('div', 'abs', echoT, { top: echoS * 0.06 + 'px', width: Math.max(3, 0.075 * echoS) + 'px', height: echoS * 0.86 + 'px', background: '#f5d47e', boxShadow: '0 0 14px rgba(238,188,78,.8)' });
-    const pillPad = echoS * 0.36;
     // ---- flourish: NO SPREADSHEETS. / NO GUESSWORK. ----
     const v14 = voT('v14', 75.6), N1 = v14 + 0.02, N2 = v14 + 1.32;
     const nMax = (P ? 124 : 100) * U;
@@ -1059,43 +1213,44 @@
     const strike1 = el('div', 'abs', no1.a, { left: -no1.w / 2 - 10 * U + 'px', top: -3 * U + 'px', width: no1.w + 20 * U + 'px', height: Math.max(3, 6 * U) + 'px', background: '#e46f61', transformOrigin: '0 50%', boxShadow: '0 0 16px rgba(228,111,97,.8)' });
     const ul2 = el('div', 'abs', no2.a, { left: -no2.w * 0.45 + 'px', top: no2.h * 0.55 + 'px', width: no2.w * 0.9 + 'px', height: Math.max(3, 5 * U) + 'px', background: 'linear-gradient(90deg, rgba(238,188,78,0), #f5d47e 15%, #eebc4e 85%, rgba(238,188,78,0))', transformOrigin: '50% 50%', boxShadow: '0 0 16px rgba(238,188,78,.7)' });
     const sweepL = el('div', 'abs', pn.clipL, { left: '0px', top: '0px', width: BOX.w + 'px', height: BOX.h + 'px', mixBlendMode: 'screen', opacity: 0, background: 'linear-gradient(110deg, rgba(255,236,190,0) 38%, rgba(255,236,190,.32) 50%, rgba(255,236,190,0) 62%)', backgroundSize: '300% 100%' });
-    const dimFl = el('div', 'abs', pn.clipL, { left: '0px', top: '0px', width: BOX.w + 'px', height: BOX.h + 'px', background: 'radial-gradient(70% 60% at 50% 50%, rgba(5,6,10,.72) 0%, rgba(5,6,10,.45) 100%)', opacity: 0 });
+    // the page dims under the two lines (and stays dim until the panel has left), plus a scrim right under the words
+    const dimFl = el('div', 'abs', pn.clipL, { left: '0px', top: '0px', width: BOX.w + 'px', height: BOX.h + 'px', background: 'radial-gradient(70% 60% at 50% 50%, rgba(5,6,10,.8) 0%, rgba(5,6,10,.55) 100%)', opacity: 0 });
+    const flScrim = Scrim(pn, 0.9);
     // ---- cuts ----
     // every state change is a hard cut on its event frame (click, key, pick)
     const cuts = cutsOf([[T.in - 0.2, s0, 0], [T.c1, sFocus, 0], ...sQ.map((n, i) => [keyAt(i), n, 0]), [T.pick, sCard, 0]]);
     pn.punches.push([T.c1, 0.008], [T.pick, 0.016]);
+    // when each typed character first showed (the cut to the first state whose text is that long)
+    const charT = [...fullTxt].map((ch, i) => { const c = cuts.find(([, n]) => isQ(n) && typedOf(n).length > i); return c ? c[0] : 1e9; });
     // ---- camera ----
     // the search card centred (9:16: the full width from the status line down)
     const srch = uni([qR, rectOf(s0, 'tier'), vis(rectOf(s0, 'hint'), s0)]);
     const camQ = !qR ? vpCam(s0) : P ? topLeft(s0, cx0, qR[1] - 230, FW.srch)
       : (() => { const z = zOf(s0, Math.max(FW.srch, (uni([qR, rectOf(s0, 'tier')]) || qR)[2] + 80)); return cam(s0, qR[0] - 30 + BOX.w / 2 / z, srch[1] + srch[3] / 2 - 20, z); })();
-    // typing: the box near the top, room above its heading for the gold echo, the suggestions below
-    const pillH = echoS * 1.0 + echoS * 0.36 * 1.24;
-    const headY = qR ? qR[1] - 46 : 0;   // the search card's heading sits ~40 px above the box
-    const camType = qR ? (() => {
-      const z = zOf(s0, FW.typ), yTop = headY - (pillH + 34 * U) / z - headroom(z) * 0.4;
-      return P ? cam(s0, PW / 2, yTop + BOX.h / 2 / z, z) : keep(s0, cam(s0, qR[0] - 40 + BOX.w / 2 / z, yTop + BOX.h / 2 / z, z), qR[0] + qR[2] / 2, qR[1]);
-    })() : camQ;
+    const camT = camType || camQ;
     const listTop = qR ? qR[1] - (P ? 120 : 70) : VH * 0.3;
     const camList = keep(sLastQ, topLeft(sLastQ, cx0, listTop, FW.srch), pickAt && pickAt[0], pickAt && pickAt[1], 120 * U);
-    const cardR = vis(rectOf(sCard, 'card'), sCard);
     const camCard = cardR ? topLeft(sCard, cardR[0], cardR[1], FW.card) : vpCam(sCard);
-    const camRows = band ? (P ? cam(sCard, PW / 2, band[1] + Math.min(band[3], BOX.h / zOf(sCard, FW.card) * 0.9) / 2 - 20, zOf(sCard, FW.card)) : topLeft(sCard, cardR ? cardR[0] : cx0, band[1] - 40, FW.card)) : camCard;
+    const camRows = band ? (P ? cam(sCard, PW / 2, band[1] + Math.min(band[3], BOX.h / zCard * 0.9) / 2 - 20, zCard) : topLeft(sCard, cardR ? cardR[0] : cx0, band[1] - 40, FW.card)) : camCard;
     const kStart = keyAt(0);
     const camF = track([
-      [T.in - 0.2, camQ], [T.c1 + 0.1, camQ], [kStart - 0.05, camType, E.ioC], [T.pop - 0.1, zoomed(s0, camType, 1.03), E.lin],
+      [T.in - 0.2, camQ], [T.c1 + 0.1, camQ], [kStart - 0.05, camT, E.ioC], [T.pop - 0.1, zoomed(s0, camT, 1.03), E.lin],
       [T.pop + 0.35, camList, E.outQuint], [T.pick + 0.08, camList],
       [T.cardWh + 0.25, camCard, E.outQuint], [revealDone, camRows, E.ioQ], [T.best - 0.4, zoomed(sCard, camRows, 1.02), E.ioQ],
       [T.best + 0.05, camBest || camCard, E.ioC], [N1 - 0.3, camBest || camCard], [N1 + 0.5, zoomed(sCard, camCard, 0.98), E.ioC], [T.out, zoomed(sCard, camCard, 1.04), E.lin],
     ]);
     const pickV = pickR && inView(pickR, camList);
     const pts = [];
-    if (qAt) pts.push([T.in + 0.3, qAt[0] + PW * 0.45, qAt[1] + VH * 0.3], [T.c1 - 0.28, qAt[0] + 3, qAt[1] + 3], [T.c1, ...qAt], [T.c1 + 0.2, ...qAt], [kStart + 0.25, qAt[0] + PW * 0.2, qAt[1] + 90]);
+    // (while typing the cursor waits left of the echo pill, off the search box)
+    const rest = echoPos ? [echoPos.xL - 34, echoPos.py + 4] : (qAt ? [qAt[0] + PW * 0.2, qAt[1] + 90] : null);
+    if (qAt) pts.push([T.in + 0.3, qAt[0] + PW * 0.45, qAt[1] + VH * 0.3], [T.c1 - 0.28, qAt[0] + 3, qAt[1] + 3], [T.c1, ...qAt], [T.c1 + 0.2, ...qAt], [kStart + 0.25, ...rest]);
     if (pickAt) pts.push([T.pop + 0.3, pickAt[0] + PW * 0.2, pickAt[1] - 40], [T.pick - 0.42, pickAt[0] + 2, pickAt[1] + 2], [T.pick, ...pickAt], [T.pick + 0.2, ...pickAt], [T.cardWh + 0.5, pickAt[0] + PW * 0.5, pickAt[1] + VH * 0.4]);
     if (!pts.length) pts.push([T.in, PW * 1.3, VH]);
     const clicks = [qAt ? T.c1 : null, pickAt ? T.pick : null].filter(x => x != null);
     const qMark = Mark(pn), pickMark = Mark(pn), clickM = Mark(pn);
     const tiltAmt = t => K(t, [[T.in, 0.9], [T.in + 0.7, 0.3], [T.c1 - 0.5, 0], [T.pick + 0.3, 0], [T.cardWh + 0.4, 0.25], [T.best - 0.2, 0], [T.best + 0.6, 0], [N1, 1.5], [N2 + 0.8, 1.2], [T.out, 0.9]]);
+    // the words leave just before the whoosh; the page stays dimmed under them until the panel itself is gone
+    const fo = t => seg(t, T.out - 0.32, T.out - 0.04, E.inQ);
     return (t) => {
       pn.pose(t, T.in, T.out, tiltAmt(t));
       // the card lifts toward the camera on "No spreadsheets."
@@ -1107,8 +1262,9 @@
       // states; while the card's rows are revealed the card is drawn from its gap crops + row crops
       const revealing = !!(sCard && band && t >= T.pick && t < revealDone);
       const bo = revealing ? 1 : 0;
+      const mix = mixAt(cuts, t);
       if (revealing) pn.mix({ __top: null });
-      else pn.mix(mixAt(cuts, t));
+      else pn.mix(mix);
       for (const bc of baseCrops) bc.w.style.opacity = bo.toFixed(3);
       for (const rc of rowCrops) {
         const p = seg(t, rc.t0, rc.t0 + 0.2, E.outC);
@@ -1119,9 +1275,9 @@
         rc.edge.style.opacity = on && p < 1 ? (1 - p * 0.6).toFixed(3) : 0;
         rc.edge.style.left = (rc.r[0] + rc.r[2] * p) + 'px';
       }
-      // cursor
+      // cursor (kept inside the panel)
       const [px, py] = cursorPath(t, pts);
-      const [sx, sy] = pn.scr(px, py);
+      const [sx, sy] = curIn(...pn.scr(px, py));
       pn.cur.set(t, sx, sy, clicks, seg(t, T.in + 0.3, T.in + 0.5) * (1 - seg(t, T.cardWh + 0.3, T.cardWh + 0.6)));
       // search box glow while typing; the picked row
       const qr = qR ? pn.scrR(qR) : null;
@@ -1131,39 +1287,45 @@
       pickMark.set(pr, seg(t, T.pick - 0.45, T.pick - 0.3), 1 + 0.04 * (1 - spring(t - T.pick + 0.45, 3, 0.5)) - 0.03 * seg(t, T.pick - 0.1, T.pick));
       const dc = t - T.c1;
       clickM.set(qr && dc > -0.02 && dc < 0.5 ? qr : null, dc < 0 ? 0 : 1 - seg(dc, 0.18, 0.5), 1.12 - 0.12 * E.outC(clamp(dc / 0.2)), 9 * U);
-      // typed letters echo
-      let n = 0; for (let i = 0; i < 7; i++) if (t >= keyAt(i)) n = i + 1;
+      // typed letters echo: exactly the text of the state on screen (held through the list until it fades)
+      const shown = isQ(mix.__top) ? typedOf(mix.__top) : (t >= T.pop ? fullTxt : '');
+      const n = Math.min(echoChars.length, shown.length);
       const wN = n ? cum[n - 1] : 0;
-      const echoOn = seg(t, kStart - 0.06, kStart + 0.04) * (1 - seg(t, T.pop + 0.06, T.pop + 0.26));
-      // centred in the room above the search card's heading (never over the heading, never above the panel)
-      // (held where it was once the camera leaves the typing shot for the full list)
-      const hy = qR ? pn.scr(0, headY, camF(Math.min(t, T.pop - 0.1)))[1] : BOX.y + BOX.h * 0.3;
-      const ey = Math.max(BOX.y + 16 * U + pillH / 2, Math.min(hy - 14 * U - pillH / 2, (BOX.y + TOPFADE * 0.5 + hy) / 2));
-      tf(echoA, { x: W / 2, y: ey, o: echoOn, s: 1 + 0.18 * seg(t, T.pop, T.pop + 0.3, E.inQ) });
+      const echoOn = (t >= kStart ? 1 : 0) * (1 - seg(t, T.pop + 0.06, T.pop + 0.26));
+      // anchored to its page spot (held where it was once the camera leaves the typing shot for the full list)
+      const ep = echoPos ? pn.scr(echoPos.px, echoPos.py, camF(Math.min(t, T.pop - 0.1))) : [W / 2, BOX.y + BOX.h * 0.3];
+      const pop0 = spring(t - kStart, 4, 0.5);
+      tf(echoA, { x: ep[0], y: ep[1], o: echoOn, s: (0.85 + 0.15 * pop0) * (1 + 0.18 * seg(t, T.pop, T.pop + 0.3, E.inQ)) });
       const caretW = Math.max(3, 0.075 * echoS) + 0.08 * echoS;
       const totW = wN + caretW;
       echoT.style.left = (-totW / 2) + 'px'; echoT.style.top = (-echoH / 2) + 'px';
       caret.style.left = (wN + 0.06 * echoS) + 'px';
-      caret.style.opacity = n >= 7 ? (Math.floor(t * 3.2) % 2 ? 0.25 : 1) : 1;
+      caret.style.opacity = n >= echoChars.length ? (Math.floor(t * 3.2) % 2 ? 0.25 : 1) : 1;
       pill.style.left = (-totW / 2 - pillPad) + 'px'; pill.style.top = (-echoH / 2 - pillPad * 0.62) + 'px';
       pill.style.width = (totW + 2 * pillPad) + 'px'; pill.style.height = (echoH + pillPad * 1.24) + 'px';
+      // each letter is there in full from its key's frame, with a small pop
       echoChars.forEach((ch, i) => {
-        const d = t - keyAt(i), a = spring(d, 3.6, 0.45);
-        tf(ch, { y: (1 - a) * -0.45 * echoS, s: 1 + 0.5 * (1 - clamp(a)), o: d >= 0 ? clamp(a * 2.5) : 0 });
+        const d = t - charT[i], a = spring(d, 4.2, 0.55);
+        tf(ch, { y: (1 - clamp(a)) * -0.12 * echoS, s: 1 + 0.3 * (1 - clamp(a)), o: i < n ? 1 : 0 });
       });
-      // best price
+      // what the card covers (no price data) / the best price
       spotRun(bestSpot, pn, t, bestR && sCard ? [{ t0: T.best, t1: N1 - 0.1, r: bestR }] : []);
       const br = bestR && sCard ? pn.scrR(bestR) : null;
-      if (br) { const [x, y] = place(bestCo, br); bestCo.set(t, T.best + 0.05, N1 - 0.15, x, y); } else off(bestCo);
-      bestMark.set(br, seg(t, T.best - 0.05, T.best + 0.12) * (1 - seg(t, N1 - 0.35, N1 - 0.1)), 1 + 0.1 * (1 - spring(t - T.best, 3, 0.5)));
+      if (br && bestCo) {
+        const [x, y] = bandMode ? pn.scr(bestAt[0], bestAt[1]) : place(bestCo, br);
+        bestCo.set(t, T.best + 0.05, N1 - 0.15, x, y);
+      } else if (bestCo) off(bestCo);
+      bestMark.set(br, seg(t, T.best - 0.05, T.best + 0.12) * (1 - seg(t, N1 - 0.35, N1 - 0.1)), 1 + (bandMode ? 0.03 : 0.1) * (1 - spring(t - T.best, 3, 0.5)));
       bestG.set(t, T.best, br);
       // flourish
-      const f1 = spring(t - N1, 3.2, 0.48), f2 = spring(t - N2, 3.2, 0.48), fo = seg(t, T.out - 0.1, T.out + 0.25);
+      const f1 = spring(t - N1, 3.2, 0.48), f2 = spring(t - N2, 3.2, 0.48), wo = fo(t);
       const yC = BOX.y + BOX.h * 0.5;
-      dimFl.style.opacity = (seg(t, N1 - 0.1, N1 + 0.25) * (1 - fo)).toFixed(3);
-      tf(no1.a, { x: W / 2 + (1 - clamp(f1)) * -W * 0.1, y: yC - nS * 0.66, s: 1 + 0.25 * (1 - clamp(f1)), o: t >= N1 ? clamp(f1 * 2) * (1 - fo) : 0, blur: (1 - clamp(f1)) * 6 });
+      dimFl.style.opacity = seg(t, N1 - 0.1, N1 + 0.25).toFixed(3);
+      const o1 = t >= N1 ? clamp(f1 * 2) * (1 - wo) : 0, o2 = t >= N2 ? clamp(f2 * 2) * (1 - wo) : 0;
+      flScrim.set(W / 2, yC, Math.min(BOX.w * 1.08, Math.max(no1.w, no2.w) * 1.3 + 3 * nS), nS * 5, Math.max(o1, o2));
+      tf(no1.a, { x: W / 2 + (1 - clamp(f1)) * -W * 0.1, y: yC - nS * 0.66, s: (1 + 0.25 * (1 - clamp(f1))) * (1 - 0.08 * wo), o: o1, blur: (1 - clamp(f1)) * 6 + wo * 4 });
       tf(strike1, { sx: Math.max(0.001, seg(t, N1 + 0.62, N1 + 0.86, E.outC)), o: 0.92 });
-      tf(no2.a, { x: W / 2 + (1 - clamp(f2)) * W * 0.1, y: yC + nS * 0.66, s: 1 + 0.25 * (1 - clamp(f2)), o: t >= N2 ? clamp(f2 * 2) * (1 - fo) : 0, blur: (1 - clamp(f2)) * 6 });
+      tf(no2.a, { x: W / 2 + (1 - clamp(f2)) * W * 0.1, y: yC + nS * 0.66, s: (1 + 0.25 * (1 - clamp(f2))) * (1 - 0.08 * wo), o: o2, blur: (1 - clamp(f2)) * 6 + wo * 4 });
       tf(ul2, { sx: Math.max(0.001, seg(t, N2 + 0.3, N2 + 0.55, E.outC)) });
       const sw = seg(t, N1 + 0.05, N1 + 0.95, E.ioQ), sw2 = seg(t, N2 + 0.05, N2 + 0.95, E.ioQ);
       const swp = t < N2 ? sw : sw2;

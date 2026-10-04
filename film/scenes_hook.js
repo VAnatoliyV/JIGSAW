@@ -40,6 +40,13 @@
         wd.T = T; wd.stackSize = size; wd.dir = (li + j) % 2 ? 1 : -1;
         // hero (single word, centred, big)
         wd.heroScale = Math.min(fit(wd.w, W * 0.9, 1000), (P ? 0.36 : 0.62) * H, wd.heroMax || wd.max * 1.25) / size;
+        // largest scale (x heroScale) at which an ink width iw stays >= 3% of W inside the frame on the hit frame,
+        // given the camera's zoom + shake there (word centred on W/2; rotation adds the tilted half-height)
+        wd.fitHit = (iw) => {
+          const c = FX.camAt(wd.t), r = Math.abs(c.r) * Math.PI / 180;
+          const room = W / 2 - Math.abs(c.x) - 0.03 * W - (wd.T ? wd.T.h : size) * wd.heroScale * c.z * Math.sin(r) / 2;
+          return room / (iw / 2 * wd.heroScale * c.z * Math.cos(r));
+        };
         x += widths[j] + gapEm * size;
       });
       y += size * 0.92 + 18 * U;
@@ -59,9 +66,13 @@
     const burns = WORDS[2].T.e; burns.textContent = ''; burns.classList.remove('fire');
     const chars = [...'BURNS'].map(c => { const s = el('span', 'fire', burns, { display: 'inline-block' }); s.textContent = c; return s; });
     burns.style.filter = 'url(#heat)';
-    // eyelids for BLIND
-    const lidT = el('div', 'abs', Lr, { left: 0, top: 0, width: W + 'px', height: H / 2 + 2 + 'px', background: '#050608', zIndex: 20 });
-    const lidB = el('div', 'abs', Lr, { left: 0, top: H / 2 - 2 + 'px', width: W + 'px', height: H / 2 + 2 + 'px', background: '#050608', zIndex: 20 });
+    // eyelids for BLIND: soft-edged (an eyelid shadow, never a hard bar creeping in at the frame edge),
+    // fully off-frame until they start to close; closed = the two solid halves meet at H/2
+    const LID_F = Math.round(H * 0.07);   // feather
+    const lidT = el('div', 'abs', Lr, { left: 0, top: 0, width: W + 'px', height: H / 2 + LID_F + 'px', zIndex: 20,
+      background: `linear-gradient(180deg, #050608 0px, #050608 ${H / 2}px, rgba(5,6,8,0) ${H / 2 + LID_F}px)` });
+    const lidB = el('div', 'abs', Lr, { left: 0, top: -LID_F + H / 2 + 'px', width: W + 'px', height: H / 2 + LID_F + 'px', zIndex: 20,
+      background: `linear-gradient(0deg, #050608 0px, #050608 ${H / 2}px, rgba(5,6,8,0) ${H / 2 + LID_F}px)` });
     // shock rings
     const rings = WORDS.map(() => el('div', 'abs', Lr, { left: W / 2 - 300 * U + 'px', top: H / 2 - 300 * U + 'px', width: 600 * U + 'px', height: 600 * U + 'px', borderRadius: '50%', border: `${6 * U}px solid rgba(245,212,126,.8)`, opacity: 0 }));
     // stars for SILVER
@@ -80,7 +91,7 @@
       // lids
       const lid = seg(t, 2.22, 2.5, E.inQ);
       show(lidT, t >= 2.2 && t < 2.5); show(lidB, t >= 2.2 && t < 2.5);
-      tf(lidT, { y: -H / 2 * (1 - lid) }); tf(lidB, { y: H / 2 * (1 - lid) });
+      tf(lidT, { y: -(H / 2 + LID_F) * (1 - lid) }); tf(lidB, { y: (H / 2 + LID_F) * (1 - lid) });
       // words
       WORDS.forEach((wd, i) => {
         const T = wd.T, e = T.e;
@@ -92,15 +103,28 @@
         let o = { x: dx, y: dy, s: wd.heroScale, o: 1, blur: 0 };
         const dt = t - wd.t;
         if (heroOn) {
-          if (i === 0) { const p = seg(dt, 0, 0.2, E.outE); o.s *= lerp(2.3, 1, p) * (1 + 0.05 * dt); o.blur = (1 - p) * 16; o.o = seg(dt, 0, 0.04); }
-          if (i === 1) { const p = seg(dt, 0, 0.22, E.outE); e.style.letterSpacing = lerp(0.5, 0.02, p) + 'em'; o.o = p; o.blur = lerp(10, 0, p) + seg(t, 1.9, 2.45, E.inQ) * 30; o.o *= 1 - 0.6 * seg(t, 2.0, 2.45); o.s *= 1 + 0.08 * dt; }
-          if (i === 2) {
-            chars.forEach((c, j) => { const a = spring(dt - j * 0.035, 3.0, 0.55); c.style.transform = `translateY(${((1 - a) * 0.9 * T.h).toFixed(1)}px)`; c.style.opacity = clamp(a * 1.5).toFixed(2); });
-            heatD.setAttribute('scale', (14 + 8 * Math.sin(t * 40)).toFixed(1)); heatT.setAttribute('seed', String(Math.floor(t * 24)));
-            o.s *= 1 + 0.06 * dt; o.bright = 1 + 0.25 * noise1(t * 20, 4);
+          // every word is fully present ON its hit frame (dt = 0): full opacity, whole word inside the frame,
+          // then it slams down to rest (a touch larger + brighter + soft on the hit, settling in ~0.2 s)
+          // entry scale: up to 1.15x, as long as the whole word stays on screen on this (zoomed + shaken) hit frame
+          const s0 = Math.min(1.15, wd.fitHit(T.w));
+          if (i !== 1) e.style.letterSpacing = '';   // (stack phase sets 0.02em; keep any frame order deterministic)
+          if (i === 0) { const p = seg(dt, 0, 0.2, E.outE); o.s *= lerp(s0, 1, p) * (1 + 0.05 * dt); o.blur = (1 - p) * 4; o.bright = 1 + 0.9 * (1 - p); }
+          if (i === 1) {
+            // letters spread on the hit (as wide as the frame allows) and pull together; ink kept centred
+            const ls0 = clamp((wd.fitHit(1) - T.w) / (4 * T.size), 0.02, 0.5);   // fitHit(1) = widest ink that fits
+            const p = seg(dt, 0, 0.22, E.outE), ls = lerp(ls0, 0.02, p);
+            o.s *= 1 + 0.08 * dt;
+            // the box grows by 5 spacings (the last one trails the D): put the ink centre, not the box centre, on W/2
+            e.style.letterSpacing = ls + 'em'; o.x = dx - ls * T.size * (2.5 - o.s / 2);
+            o.blur = lerp(3, 0, p) + seg(t, 1.9, 2.45, E.inQ) * 30; o.o = 1 - 0.6 * seg(t, 2.0, 2.45); o.bright = 1 + 0.6 * (1 - p);
           }
-          if (i === 3) { const p = spring(dt, 3.5, 0.45); o.y = dy - (1 - p) * H * 0.4; }
-          if (i === 4) { const p = seg(dt, 0, 0.18, E.outE); o.s *= lerp(1.6, 1, p); o.o = seg(dt, 0, 0.03); o.blur = (1 - p) * 10; }
+          if (i === 2) {
+            chars.forEach((c, j) => { const a = spring(dt - j * 0.035, 3.0, 0.55); c.style.transform = `translateY(${((1 - a) * 0.3 * T.h).toFixed(1)}px)`; c.style.opacity = 1; });
+            heatD.setAttribute('scale', (14 + 8 * Math.sin(t * 40)).toFixed(1)); heatT.setAttribute('seed', String(Math.floor(t * 24)));
+            o.s *= 1 + 0.06 * dt; o.bright = 1 + 0.25 * noise1(t * 20, 4) + 0.6 * Math.exp(-dt / 0.08);
+          }
+          if (i === 3) { const p = spring(dt, 3.5, 0.45); o.y = dy - (1 - p) * Math.min(H * 0.4, H * 0.46 - T.h * wd.heroScale / 2); }
+          if (i === 4) { const p = seg(dt, 0, 0.18, E.outE); o.s *= lerp(s0, 1, p); o.blur = (1 - p) * 4; o.bright = 1 + 0.5 * (1 - p); }
         } else {
           // stack phase: slide into the composed sentence
           e.style.letterSpacing = '0.02em';
@@ -139,16 +163,35 @@
   FX.CITIES = CITIES;
   scene('cities', 5.98, 8.75, (Lr) => {
     const n = 7, horiz = !L;  // horizontal bands (portrait/square) or vertical slices (landscape)
+    // label box inside each band/slice: an inset inside the slice and >= 3.5% of W from the outer frame edges
+    const EDGE = 0.035 * W, sliceW = W / n, IN = 0.08 * sliceW;
+    const lblBox = i => { const x0 = i * sliceW, l = Math.max(x0 + IN, EDGE), r = Math.min(x0 + sliceW - IN, W - EDGE); return [l - x0, r - l]; };
+    // vertical slices: one size for all labels, so the longest word of every name fits its own box (names wrap per word)
+    let sliceLbl = 38 * U;
+    if (!horiz) {
+      const probe = el('div', 'abs px', Lr, { fontSize: '100px', visibility: 'hidden' });
+      CITIES.forEach(([, name], i) => { for (const wd of name.toUpperCase().split(' ')) { probe.textContent = wd; sliceLbl = Math.min(sliceLbl, lblBox(i)[1] * 100 / probe.offsetWidth); } });
+      probe.remove();
+    }
     const bands = CITIES.map(([slug, name], i) => {
       const b = el('div', 'abs', Lr, { overflow: 'hidden', background: '#000' });
       const img = el('img', 'abs', b, { transformOrigin: '0 0' }); img.src = `../assets/cities/${slug}-hero.webp`;
       const shade = el('div', 'fill', b, { background: horiz ? 'linear-gradient(90deg, rgba(5,6,10,.75) 0%, rgba(5,6,10,0) 55%)' : 'linear-gradient(0deg, rgba(5,6,10,.85) 0%, rgba(5,6,10,0) 45%)' });
       const tint = el('div', 'fill', b, { background: 'rgba(5,6,10,1)', opacity: 0 });
       const red = el('div', 'fill', b, { background: 'linear-gradient(180deg, rgba(120,12,18,.55), rgba(20,0,4,.75))', mixBlendMode: 'multiply', opacity: 0 });
-      const lblSize = horiz ? (P ? 56 : 38) * U : Math.min(34 * U, fit(name.toUpperCase(), W / n - 30 * U, 40 * U));
-      const lbl = el('div', 'abs px', b, { fontSize: lblSize + 'px', color: '#fff', textShadow: '0 3px 12px rgba(0,0,0,.8)' });
-      lbl.innerHTML = `<span style="color:#eebc4e;font-size:.62em;margin-right:.5em">0${i + 1}</span>${name.toUpperCase()}`;
-      return { b, img, tint, red, lbl, i };
+      let lbl, lx;
+      if (horiz) {
+        lbl = el('div', 'abs px', b, { fontSize: (P ? 56 : 38) * U + 'px', color: '#fff', textShadow: '0 3px 12px rgba(0,0,0,.8)' });
+        lbl.innerHTML = `<span style="color:#eebc4e;font-size:.62em;margin-right:.5em">0${i + 1}</span>${name.toUpperCase()}`;
+        lx = Math.max(44 * U, EDGE);
+      } else {
+        // numeral above the name, centred in the slice's label box
+        const [l, bw] = lblBox(i);
+        lbl = el('div', 'abs px', b, { fontSize: sliceLbl + 'px', color: '#fff', textShadow: '0 3px 12px rgba(0,0,0,.8)', width: bw + 'px', whiteSpace: 'normal', textAlign: 'center', lineHeight: 1.08 });
+        lbl.innerHTML = `<div style="color:#eebc4e;font-size:.62em;margin-bottom:.4em">0${i + 1}</div>${name.toUpperCase()}`;
+        lx = l;
+      }
+      return { b, img, tint, red, lbl, i, lx, lh: lbl.offsetHeight };
     });
     const dark = el('div', 'fill', Lr, { background: 'radial-gradient(55% 40% at 50% 50%, rgba(5,6,10,.82) 0%, rgba(5,6,10,.25) 100%)' });
     const seven = text(Lr, '7', (P ? 520 : 440) * U, 'px gold', { filter: 'drop-shadow(0 12px 30px rgba(0,0,0,.8))' });
@@ -184,8 +227,8 @@
         const iw = 2200 * cs, ih = 620 * cs;
         const drift = (hash(i, 3) - 0.5) * 0.1 + dir * 0.03 * (t - 6);
         B.img.style.transform = `translate(${((w - iw) / 2 + drift * iw * 0.3).toFixed(1)}px,${((h - ih) / 2).toFixed(1)}px) scale(${cs.toFixed(5)})`;
-        B.lbl.style.left = (horiz ? 44 * U : (w - B.lbl.offsetWidth) / 2) + 'px';
-        B.lbl.style.top = (horiz ? (h - B.lbl.offsetHeight) / 2 : h - 90 * U) + 'px';
+        B.lbl.style.left = B.lx + 'px';
+        B.lbl.style.top = (horiz ? (h - B.lh) / 2 : h - 64 * U - B.lh) + 'px';   // slices: bottom-aligned
         B.lbl.style.opacity = (i === 5 ? 1 - bmP : 1).toFixed(2);
         if (i === 5) { B.red.style.opacity = bmP.toFixed(3); B.tint.style.opacity = (0.15 * bmP + 0.75 * seg(t, 8.2, 8.75, E.inQ)).toFixed(3); }
       });
@@ -290,16 +333,24 @@
       for (let i = 0; i < oc.width * oc.height / 90; i++) { const x = hash(i, 21) * oc.width, y = hash(i, 22) * oc.height, rr = hash(i, 23) * 2.2 * U + 0.4; o.globalAlpha = 0.3 + hash(i, 24) * 0.7; o.fillRect(x, y, rr, rr); }
       o.globalAlpha = 1; o.globalCompositeOperation = 'source-over';
       st.oc = oc; st.size = size;
+      // entry scale on the hit frame: as large as 1.15x while the rotated stamp stays inside the frame (2% margin)
+      const ra = Math.abs(st.rot) * Math.PI / 180, hx = (oc.width * Math.cos(ra) + oc.height * Math.sin(ra)) / 2, hy = (oc.width * Math.sin(ra) + oc.height * Math.cos(ra)) / 2;
+      const mx = Math.min(st.pos[0], 1 - st.pos[0]) * W - 0.02 * W, my = Math.min(st.pos[1], 1 - st.pos[1]) * H - 0.02 * H;
+      st.s0 = clamp(Math.min(1.15, mx / hx, my / hy), 1, 1.15);
     }
     const profitSize = fit('PROFIT', W * (L ? 0.42 : 0.74), 230 * U);
     // static composition (for ember/content sampling)
     function drawStatic(c, t, opts = {}) {
       for (const st of STAMPS) {
         const dt = t - st.t; if (dt < 0) continue;
-        const land = dt < 0.09 ? lerp(1.75, 1, E.inQ(dt / 0.09)) : 1 + 0.025 * Math.exp(-(dt - 0.09) * 18) * Math.sin((dt - 0.09) * 60);
+        // fully inked ON the hit frame (dt = 0), slammed a touch large, settling with a little wobble
+        const LAND = 0.07;
+        const land = dt < LAND ? lerp(st.s0, 1, E.outQ(dt / LAND)) : 1 + 0.025 * Math.exp(-(dt - LAND) * 18) * Math.sin((dt - LAND) * 60);
         c.save(); c.translate(st.pos[0] * W, st.pos[1] * H); c.rotate(st.rot * Math.PI / 180); c.scale(land, land);
-        c.globalAlpha = clamp(dt / 0.04) * (opts.alpha == null ? 1 : opts.alpha);
-        c.drawImage(st.oc, -st.oc.width / 2, -st.oc.height / 2); c.restore();
+        c.globalAlpha = opts.alpha == null ? 1 : opts.alpha;
+        c.drawImage(st.oc, -st.oc.width / 2, -st.oc.height / 2);
+        if (dt < 0.1) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.55 * (1 - dt / 0.1); c.drawImage(st.oc, -st.oc.width / 2, -st.oc.height / 2); }   // ink flash on the hit
+        c.restore();
       }
       const dp = t - PROFIT.t;
       if (dp >= 0) {

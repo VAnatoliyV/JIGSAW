@@ -75,11 +75,30 @@
   }, { z: 60 });
 
   // ---------- camera: shake + zoom punch on impacts ----------
+  // The whole cam layer (every scene and its full-frame backgrounds) moves together, so a shaken cam must
+  // always still cover the canvas: the stage behind it must never show as a bar at the frame edge.
+  // Zoom is a smooth envelope of the impacts (punch + a share of the shake amplitude, no per-frame
+  // zoom jitter); the per-frame shake (translate + rotate) is then scaled down on the frames where it
+  // would not fit inside that zoom, so the cam edge always overhangs the canvas.
   const impacts = TL.events.filter(e => e.type === 'impact' || e.type === 'hit' || e.type === 'stamp')
     .map(e => ({ t: e.t, s: e.type === 'impact' ? e.strength : (e.type === 'hit' ? 1 : 0.7) }));
   FX.shakeScale = 1;  // scenes may damp it
-  always.push((t) => {
-    let sx = 0, sy = 0, rot = 0, punch = 0;
+  const HW = W / 2, HH = H / 2, HMIN = Math.min(HW, HH);
+  const PAD = 2;          // px the cam edge must overhang the canvas (no anti-aliased seam)
+  const ZOOM_SHAKE = 0.004;   // extra zoom per unit of shake amplitude (strength^2 envelope)
+  // smallest zoom of the cam (about its centre, then rotated, then translated) that covers the canvas + pad
+  function coverZoom(tx, ty, rotDeg, pad) {
+    const r = rotDeg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+    let z = 0;
+    for (const [px, py] of [[-HW - pad, -HH - pad], [HW + pad, -HH - pad], [HW + pad, HH + pad], [-HW - pad, HH + pad]]) {
+      const dx = px - tx, dy = py - ty;
+      z = Math.max(z, Math.abs(c * dx + s * dy) / HW, Math.abs(-s * dx + c * dy) / HH);
+    }
+    return z;
+  }
+  // camera state at time t (pure function of t; k = FX.shakeScale): {x, y (px), r (deg), z}
+  function camAt(t, k = 1) {
+    let sx = 0, sy = 0, rot = 0, punch = 0, amp = 0;
     for (const im of impacts) {
       const dt = t - im.t;
       if (dt < 0 || dt > 0.8) continue;
@@ -88,10 +107,24 @@
       sy += noise1(dt * 38 + im.t, 2) * 7 * U * a;
       rot += noise1(dt * 30 + im.t, 3) * 0.25 * a;
       punch += 0.012 * im.s * Math.exp(-dt / 0.11);
+      amp += a;
     }
-    const k = FX.shakeScale;
-    const cam = document.querySelector('.cam');
-    cam.style.transform = `translate(${(sx * k).toFixed(2)}px,${(sy * k).toFixed(2)}px) rotate(${(rot * k).toFixed(3)}deg) scale(${(1 + punch * k).toFixed(4)})`;
+    const z = 1 + k * (punch + ZOOM_SHAKE * amp);
+    sx *= k; sy *= k; rot *= k;
+    // overhang required: PAD, or less in the decaying tail (a centred zoom alone always satisfies it)
+    const pad = Math.min(PAD, 0.5 * (z - 1) * HMIN);
+    let q = 1;
+    if (coverZoom(sx, sy, rot, pad) > z) {
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 16; i++) { const m = (lo + hi) / 2; if (coverZoom(sx * m, sy * m, rot * m, pad) <= z) lo = m; else hi = m; }
+      q = lo;
+    }
+    return { x: sx * q, y: sy * q, r: rot * q, z };
+  }
+  FX.camAt = camAt;   // scenes use it e.g. to keep a word whole on screen on its (shaken) hit frame
+  always.push((t) => {
+    const c = camAt(t, FX.shakeScale);
+    document.querySelector('.cam').style.transform = `translate(${c.x.toFixed(2)}px,${c.y.toFixed(2)}px) rotate(${c.r.toFixed(3)}deg) scale(${c.z.toFixed(5)})`;
   });
 
   // ---------- flash ----------

@@ -7,7 +7,7 @@
 //   84 🛡 ROADS TO CAERLEON  diagonal pixel-block dissolve, tilted 3D panel: the section in context        (mont_roads)
 //                           (header title row, section bar with Roads lit, status, task, bandit card, killboard title)
 //   85 ⚔️ BANDIT ASSAULT    punch into a crop band of the bandit-windows card only, scanning its lines   (mont_roads roads[0])
-//   86 🧮 CALCULATOR        whip from the left with a 3D swing, the camera lands on the result row       (mont_calc / mont_calc_search)
+//   86 🧮 CALCULATOR        two full-width crop windows of the card swing in: item + materials, then the selects + result row  (mont_calc)
 //   87 9 LANGUAGES          slot reel through the 9 real hero captures (lang_*), accelerating on the riser,
 //                           then everything is pulled into one bright point by 88.0 (hard cut to the ending).
 // States come through pick() (first existing, non-stale preferred). A missing state is never added (no console
@@ -34,7 +34,13 @@
   const rowsV = (n, k) => rectsOf(n, 'row').slice(0, k).map(r => vis(r, n)).filter(Boolean);
   const first = (n, k) => vis(rectsOf(n, k)[0], n);
   // the section's own rail button (horizontal rail on phone / square layouts), to tie the stamp to the UI
-  const railOf = (n, word) => { if (L) return null; const i = labelsOf(n, 'rail').findIndex(s => s.includes(word)); return i >= 0 ? vis(rectsOf(n, 'rail')[i], n) : null; };
+  // (none when the rail runs past the page's edges, as on the phone: its end buttons would show cut words)
+  const railOf = (n, word) => {
+    if (L) return null;
+    const rs = rectsOf(n, 'rail');
+    if (rs.some(r => r[0] < -1 || r[0] + r[2] > PW + 1)) return null;
+    const i = labelsOf(n, 'rail').findIndex(s => s.includes(word)); return i >= 0 ? vis(rs[i], n) : null;
+  };
 
   // decode one big capture at a time (decoding them all at once overflows Chromium's decode budget and
   // img.decode() then rejects -> index.html would log 'img failed'); a loaded image that still cannot be
@@ -120,14 +126,21 @@
     const cy = r[3] + 2 * m > 2 * hh ? r[1] - m + hh : r[1] + r[3] / 2 + (0.5 - ay) * (2 * hh - r[3] - 2 * m);
     return camIn(n, box, cx, cy, z);
   }
-  const ZS = L ? 1.85 : S ? 1.85 : 1.08;   // no rows (stale capture): get close on the populated top of the section
-  // stale capture (no rows): a shorter window around the populated top of the section, so no empty skeleton shows
-  function staleBox(n, focus, zMul) {
+  // stale capture (no rows): a shorter window around the populated top of the section, so no empty skeleton shows. The
+  // window takes the block's whole width (phones: the page width), so no line of it runs past the window's edges; the
+  // shots then move the window itself (push / pull of the rig), never the camera inside it
+  function staleBox(n, focus) {
     if (!focus) return { box: BOX, cam: camIn(n, BOX, PW / 2, VH / 2, 0) };
-    const z = anchorCam(n, BOX, focus, zMul, 0)[2];
-    const h = clamp((focus[3] + 28) * z, BOX.h * 0.42, BOX.h);
+    const fw = focus[2] + 24;
+    const z0 = camIn(n, BOX, 0, 0, BOX.w / fw)[2];
+    const h = clamp((focus[3] + 28) * z0, BOX.h * 0.42, BOX.h);
     const box = { x: BOX.x, y: BC[1] - h / 2, w: BOX.w, h };
-    return { box, cam: camIn(n, box, focus[0] - 12 + box.w / 2 / z, focus[1] + focus[3] / 2, z) };
+    const z = camIn(n, box, 0, 0, box.w / fw)[2], cx = focus[0] - 12 + box.w / 2 / z, hh = box.h / 2 / z;
+    const c = camIn(n, box, cx, focus[1] + focus[3] / 2, z), hd = first(n, 'header'), yt = c[1] - hh;
+    // the window's top edge never cuts through the site header (logo, title, buttons): when the centred window would,
+    // it top-anchors on the focus instead, its top just under the header
+    if (hd && yt > hd[1] + 2 && yt < hd[1] + hd[3] - 2) return { box, cam: camIn(n, box, cx, Math.max(focus[1] - 14 / z, hd[1] + hd[3] + 1) + hh, z) };
+    return { box, cam: c };
   }
   const lerpCam = (a, b, p) => [lerp(a[0], b[0], p), lerp(a[1], b[1], p), Math.exp(lerp(Math.log(a[2]), Math.log(b[2]), p))];
 
@@ -265,7 +278,7 @@
     const rule = el('div', 'abs', box, { left: -ruleW / 2 + 'px', top: totH / 2 + sz * 0.2 + 'px', width: ruleW + 'px', height: ruleH + 'px', borderRadius: ruleH + 'px',
       background: `linear-gradient(90deg, rgba(${lb.rgb},0), rgb(${lb.rgb}) 22%, #f5d47e 50%, rgb(${lb.rgb}) 78%, rgba(${lb.rgb},0))`, boxShadow: `0 0 18px rgba(${lb.rgb},.75)` });
     const rw = maxW + sz * 0.7, rh = totH + sz * 0.6;
-    const ring = el('div', 'abs', a, { left: -rw / 2 + 'px', top: -rh / 2 + 'px', width: rw + 'px', height: rh + 'px', borderRadius: sz * 0.22 + 'px', border: `${Math.max(2, 5 * U)}px solid rgba(255,236,190,.9)`, boxShadow: `0 0 40px rgba(${lb.rgb},.8), inset 0 0 30px rgba(${lb.rgb},.4)`, opacity: 0 });
+    const ring = el('div', 'abs', a, { left: -rw / 2 + 'px', top: -rh / 2 + 'px', width: rw + 'px', height: rh + 'px', borderRadius: sz * 0.22 + 'px', boxSizing: 'border-box', border: `${Math.max(2, 5 * U)}px solid rgba(255,236,190,.9)`, boxShadow: `0 0 40px rgba(${lb.rgb},.8), inset 0 0 30px rgba(${lb.rgb},.4)`, opacity: 0 });
     const tilt = i % 2 ? 1.6 : -1.6, ringS = lb.nine ? 0.1 : 0.3;   // 9 LANGUAGES: a tight ring (the code row sits under it)
     // the stamp falls for 0.08 s and LANDS on the hit (the first cut starts with the montage, so it lands just after)
     const TLd = i === 0 ? T + 0.03 : T, TS = TLd - 0.08;
@@ -362,13 +375,14 @@
     if (!n) return () => {};
     const rows = rowsV(n, 6);
     const focus = rows.length ? uni([first(n, 'task'), ...rectsOf(n, 'th').slice(0, 3).map(r => vis(r, n)), ...rows]) : uni([railOf(n, 'Refining'), first(n, 'status'), first(n, 'task'), first(n, 'filters')]);
-    const sb = rows.length ? { box: BOX, cam: anchorCam(n, BOX, focus, ZB, 0.15) } : staleBox(n, focus, ZS), box = sb.box;
+    const sb = rows.length ? { box: BOX, cam: anchorCam(n, BOX, focus, ZB, 0.15) } : staleBox(n, focus), box = sb.box;
     const sh = Shot(Lr, n, box, LBL[0].rgb);
-    const c0 = snapTop(n, box, sb.cam), c1 = zoomA(n, box, c0, 1.13);
+    // (stale: the window pushes in as a whole, the full-width framing inside it holds)
+    const c0 = snapTop(n, box, sb.cam), c1 = rows.length ? zoomA(n, box, c0, 1.13) : c0, grow = rows.length ? 0 : 0.06;
     return (t) => {
       sh.set(lerpCam(c0, c1, seg(t, T, T + 1, E.outQ)));
       const a = seg(t, T_IN, T + 0.12, E.outQuint), b = seg(t, T + 0.84, T + 1.0, E.inC);
-      sh.pose({ y: (1 - a) * H * 0.4, s: (0.88 + 0.12 * a) * beatPulse(t, T), rx: 30 * (1 - a) + lerp(7, 4, seg(t, T, T + 1)), ry: (L ? -9 : -5) + 3 * (1 - a) - 8 * b, x: -b * W * 1.25, by: (1 - a) * 45, bx: b * 110, bright: 1 + 0.25 * (1 - a) });
+      sh.pose({ y: (1 - a) * H * 0.4, s: (0.88 + 0.12 * a) * beatPulse(t, T) * (1 + grow * seg(t, T, T + 1, E.outQ)), rx: 30 * (1 - a) + lerp(7, 4, seg(t, T, T + 1)), ry: (L ? -9 : -5) + 3 * (1 - a) - 8 * b, x: -b * W * 1.25, by: (1 - a) * 45, bx: b * 110, bright: 1 + 0.25 * (1 - a) });
     };
   }, { z: 24 });
 
@@ -388,9 +402,10 @@
       const zK = (P ? 1.18 : 1.1) * ZB;
       c0 = snapTop(n, BOX, anchorCam(n, BOX, top, zK, 0.25)); c1 = snapTop(n, BOX, anchorCam(n, BOX, bot, zK * 1.04, 0.35));
     } else {
-      const sb = staleBox(n, uni([railOf(n, 'Enchanting'), first(n, 'status'), first(n, 'task'), grp, first(n, 'filters')]), ZS);
-      box = sb.box; c0 = snapTop(n, box, sb.cam); c1 = zoomA(n, box, c0, 1.08);
+      const sb = staleBox(n, uni([railOf(n, 'Enchanting'), first(n, 'status'), first(n, 'task'), grp, first(n, 'filters')]));
+      box = sb.box; c0 = snapTop(n, box, sb.cam); c1 = c0;
     }
+    const grow = rows.length ? 0 : 0.05;
     const sh = Shot(Lr, n, box, LBL[1].rgb), bands = Bands(Lr, n, box, NB);
     return (t) => {
       const c = lerpCam(c0, c1, seg(t, T + 0.08, T + 0.95, E.ioC));
@@ -398,13 +413,14 @@
       const sliced = t >= T + 0.84;
       sh.rig.style.display = sliced ? 'none' : '';
       sh.set(c);
-      sh.pose({ x: (1 - a) * W * 0.95, ry: (L ? 7 : 4) + 14 * (1 - a), rx: 3, bx: (1 - a) * 110, s: beatPulse(t, T), bright: 1 + 0.2 * (1 - a) });
+      const k = 1 + grow * seg(t, T + 0.08, T + 0.95, E.ioC);
+      sh.pose({ x: (1 - a) * W * 0.95, ry: (L ? 7 : 4) + 14 * (1 - a), rx: 3, bx: (1 - a) * 110, s: beatPulse(t, T) * k, bright: 1 + 0.2 * (1 - a) });
       for (const b of bands) {
         b.wrap.style.display = sliced ? '' : 'none';
         if (!sliced) continue;
         const p = seg(t, T + 0.84 + b.k * 0.007, T + 1.0 + b.k * 0.007, E.inQ);
         b.sc.set(c);
-        tf(b.wrap, { x: b.dir * p * W * 1.2, ry: (L ? 7 : 4), rx: 3, persp: 2400 * U });
+        tf(b.wrap, { x: b.dir * p * W * 1.2, ry: (L ? 7 : 4), rx: 3, s: k, persp: 2400 * U });
         b.blur(p * 70);
       }
     };
@@ -418,10 +434,12 @@
     const grp = uni(rectsOf(n, 'grp').map(r => vis(r, n)));
     const rows = rowsV(n, 5);
     const focus = rows.length ? uni([grp, ...rows]) : uni([railOf(n, 'Potions'), first(n, 'status'), first(n, 'task'), grp, first(n, 'filters')]) || first(n, 'status');
-    const sb = rows.length ? { box: BOX, cam: anchorCam(n, BOX, focus, ZB, 0.2) } : staleBox(n, focus, ZS), box = sb.box, cF = sb.cam;
+    const sb = rows.length ? { box: BOX, cam: anchorCam(n, BOX, focus, ZB, 0.2) } : staleBox(n, focus), box = sb.box, cF = sb.cam;
     const sh = Shot(Lr, n, box, LBL[2].rgb), bands = Bands(Lr, n, box, NB);
-    // pull-back: starts close, settles on the framing (top-left anchored: the window opens to the right and down)
-    const cS = snapTop(n, box, cF), c0 = zoomA(n, box, cS, rows.length ? 1.4 : 1.25), c1 = zoomA(n, box, cS, rows.length ? 1.12 : 1.02);
+    // pull-back: starts close, settles on the framing (top-left anchored: the window opens to the right and down);
+    // stale: the full-width framing holds and the window itself pulls back
+    const cS = snapTop(n, box, cF), c0 = rows.length ? zoomA(n, box, cS, 1.4) : cS, c1 = rows.length ? zoomA(n, box, cS, 1.12) : cS;
+    const kOf = t => (rows.length ? 1 : lerp(1.07, 1, seg(t, T - 0.05, T + 0.95, E.outC)));
     const rot = t => lerp(2.4, 0.6, seg(t, T - 0.1, T + 0.9, E.outQ));
     return (t) => {
       const c = lerpCam(c0, c1, seg(t, T - 0.05, T + 0.95, E.outC));
@@ -432,13 +450,13 @@
         if (!inB) continue;
         const p = seg(t, T - 0.1 + b.k * 0.009, T + 0.08 + b.k * 0.009, E.outQuint);
         b.sc.set(c);
-        tf(b.wrap, { x: -b.dir * (1 - p) * W * 1.2, r: rot(t), o: t >= T - 0.1 + b.k * 0.009 ? 1 : 0 });
+        tf(b.wrap, { x: -b.dir * (1 - p) * W * 1.2, r: rot(t), s: kOf(t), o: t >= T - 0.1 + b.k * 0.009 ? 1 : 0 });
         b.blur((1 - p) * 70);
       }
       sh.set(c);
       // hold: slow pull-back while the frame straightens; out: zoom straight through the screen
       const z = seg(t, T + 0.8, T + 1.0, E.inC);
-      sh.pose({ r: rot(t), s: (1 + 2.3 * z) * beatPulse(t, T), blur: z * 16, bright: 1 + 1.6 * z, o: 1 - seg(t, T + 0.9, T + 1.0) });
+      sh.pose({ r: rot(t), s: (1 + 2.3 * z) * beatPulse(t, T) * kOf(t), blur: z * 16, bright: 1 + 1.6 * z, o: 1 - seg(t, T + 0.9, T + 1.0) });
     };
   }, { z: 26 });
 
@@ -572,7 +590,7 @@
       c = camIn(n, box, x0 + box.w / 2 / z, top + h / 2 / z, z);
     } else {
       // no roads capture (fallback state): the top of the section, snapped to a gap
-      const sb = staleBox(n, uni([first(n, 'status'), first(n, 'task')]), ZS);
+      const sb = staleBox(n, uni([first(n, 'status'), first(n, 'task')]));
       box = sb.box; c = snapTop(n, box, sb.cam);
     }
     const sh = Shot(Lr, n, box, LBL[4].rgb);
@@ -597,7 +615,9 @@
     const bw = L ? W * 0.55 : W, bh = Math.min(H * (P ? 0.6 : 0.5), r[3] * z);
     const win = { x: L ? W * 0.45 : 0, w: bw, y: (L ? H * 0.5 : H * (P ? 0.6 : 0.62)) - bh / 2, h: bh };
     const sh = Shot(Lr, n, win, LBL[5].rgb, { flat: true, radius: 0 });
-    const edge = L ? 'linear-gradient(90deg, transparent 0%, #000 7%, #000 97%, transparent 100%)' : 'linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%)';
+    // soft fades at both ends: the band is a deliberate macro crop (its lines run on past both edges)
+    const edge = L ? 'linear-gradient(90deg, transparent 0%, rgba(0,0,0,.35) 5%, #000 15%, #000 85%, rgba(0,0,0,.35) 95%, transparent 100%)'
+      : 'linear-gradient(90deg, transparent 0%, rgba(0,0,0,.35) 4%, #000 13%, #000 87%, rgba(0,0,0,.35) 96%, transparent 100%)';
     sh.scr.frame.style.webkitMaskImage = edge; sh.scr.frame.style.maskImage = edge;
     // red danger rules along the band
     const rules = [win.y, win.y + win.h].map(y => el('div', 'abs', sh.rig, { left: win.x + 'px', top: y - 1.5 * U + 'px', width: win.w + 'px', height: 3 * U + 'px',
@@ -620,31 +640,51 @@
   }, { z: 29 });
 
   // ======================= 86 🧮 CALCULATOR =======================
+  // two crop windows of the calculator card, each the card's full width (nothing runs past their edges): (A) the item
+  // header + the materials table + the materials line under it, (B) the populated "I sell / Quality / Price / Sale price
+  // / Qty" row, its note and the result row (Invest 576 …). The card's lines between and under them (the red "No market
+  // price…" warning shown while prices are missing, the untranslated per-piece breakdown at the bottom of the result
+  // box) stay outside both windows. Offsets are css px from the card's own rects, measured on the captures (the same
+  // card CSS in every layout): the materials line ends ~53 px above the selects row, the "Cost per piece" line starts
+  // ~44 px above it, the red warning sits 28..19 px above it; the breakdown starts 29 px (phone: 47 px) above the result
+  // box's bottom, the result numbers end 50 px (phone: 66 px) above it.
   const N7 = pick('mont_calc', 'mont_calc_search') || N5;
   scene('mont_calc', 85.96, 87.0, (Lr) => {
-    const T = 86, n = N7, sh = Shot(Lr, n, BOX, LBL[6].rgb);
+    const T = 86, n = N7;
     if (!n) return () => {};
-    const calc = first(n, 'calc') || first(n, 'q') || first(n, 'task'), out = first(n, 'calcOut');
-    // wide layouts: closer, reading from the left (item, materials -> Invest / Net revenue / Profit / Margin)
-    const c0 = snapTop(n, BOX, anchorCam(n, BOX, calc, P ? 1 : ZB * 1.25, 0.05));
-    let c1;
-    if (!out) c1 = zoomA(n, BOX, c0, 1.18);
-    else if (P) {
-      // the page's fixed Settings button sits on the result card in the full-page phone capture: the window ends
-      // left of it, before the Margin column (the 4th of the card's 4 columns) -> Invest / Net revenue / Profit
-      const set = rectsOf(n, 'settings').find(r => r[1] < out[1] + out[3] && r[1] + r[3] > out[1] && r[0] < out[0] + out[2]);
-      const xr = set ? Math.min(set[0] - 4, out[0] + out[2] * 0.7) : out[0] + out[2] + 10, xl = out[0] - 12, z = BOX.w / (xr - xl);
-      c1 = snapTop(n, BOX, camIn(n, BOX, xl + BOX.w / 2 / z, out[1] + out[3] * 0.42, z));
-    } else if (first(n, 'calc')) {
-      // wide layouts: from the gap above the materials table (its header row sits ~109 css px under the card's top,
-      // the item's note line ~75) down to the result row and the line under it, reading from the left
-      const top = first(n, 'calc')[1] + 90, bot = Math.min(stripH(n), out[1] + out[3] + 30), z = BOX.h / (bot - top);
-      c1 = camIn(n, BOX, out[0] - 12 + BOX.w / 2 / z, top + BOX.h / 2 / z, z);
-    } else c1 = snapTop(n, BOX, anchorCam(n, BOX, out, ZB * 1.45, 0.72));
+    const calc = first(n, 'calc'), out = first(n, 'calcOut'), sel = rectsOf(n, 'calcSelects').map(r => vis(r, n)).filter(Boolean);
+    const rgb = LBL[6].rgb;
+    if (calc && out && sel.length) {
+      const selTop = Math.min(...sel.map(r => r[1]));
+      const x0 = Math.max(0, calc[0] - 6), x1 = Math.min(PW, calc[0] + calc[2] + 6);
+      // (phone: the page's floating Settings button sits on the result box; window B ends above it)
+      const setB = rectsOf(n, 'settings').filter(r => r[1] > selTop && r[1] < out[1] + out[3] && r[0] < x1 && r[0] + r[2] > x0).map(r => r[1] - 2);
+      const rA = [x0, Math.max(0, calc[1] - 8), x1 - x0, 0], rB = [x0, selTop - 12, x1 - x0, 0];
+      rA[3] = selTop - 65 - rA[1];
+      rB[3] = Math.min(out[1] + out[3] - (P ? 58 : 37), ...setB) - rB[1];
+      const z = BOX.w / rA[2], gap = (P ? 44 : 30) * U;
+      const hA = rA[3] * z, hB = rB[3] * z, tot = hA + gap + hB, k = Math.min(1, BOX.h * 0.96 / tot);
+      // (if the pair is taller than the panel zone, both windows shrink together, still full width of the card)
+      const zz = z * k, wW = rA[2] * zz, xW = BC[0] - wW / 2, yA = BC[1] - (hA + gap + hB) * k / 2;
+      const boxA = { x: xW, y: yA, w: wW, h: hA * k }, boxB = { x: xW, y: yA + (hA + gap) * k, w: wW, h: hB * k };
+      const shA = Shot(Lr, n, boxA, rgb), shB = Shot(Lr, n, boxB, rgb);
+      shA.set([rA[0] + rA[2] / 2, rA[1] + rA[3] / 2, zz]); shB.set([rB[0] + rB[2] / 2, rB[1] + rB[3] / 2, zz]);
+      return (t) => {
+        // A whips in from the left with the 3D swing, B follows from the right a beat-fraction later; both leave upward
+        const a = seg(t, T - 0.04, T + 0.14, E.outQuint), sw = spring(t - T + 0.04, 2.6, 0.5);
+        const a2 = seg(t, T + 0.06, T + 0.24, E.outQuint), sw2 = spring(t - T - 0.06, 2.6, 0.5);
+        const b = seg(t, T + 0.82, T + 1.0, E.inC), g = 1 + 0.03 * seg(t, T + 0.1, T + 0.9, E.outQ);
+        shA.pose({ x: -(1 - a) * W * 0.95, ry: lerp(-42, L ? -6 : -4, sw), rx: 4, y: -b * H * 1.2, bx: (1 - a) * 110, by: b * 120, s: beatPulse(t, T) * g, bright: 1 + 0.2 * (1 - a) });
+        shB.pose({ x: (1 - a2) * W * 0.95, ry: lerp(42, L ? -6 : -4, sw2), rx: 4, y: -b * H * 1.2, bx: (1 - a2) * 110, by: b * 120, s: beatPulse(t, T) * g, bright: 1 + 0.2 * (1 - a2), o: t >= T + 0.06 ? 1 : 0 });
+      };
+    }
+    // no calculator card in the capture: the section's populated top, full width
+    const sb = staleBox(n, uni([first(n, 'status'), first(n, 'task'), first(n, 'q') || first(n, 'search')]));
+    const sh = Shot(Lr, n, sb.box, rgb), c0 = snapTop(n, sb.box, sb.cam);
+    sh.set(c0);
     return (t) => {
       const a = seg(t, T - 0.04, T + 0.14, E.outQuint), sw = spring(t - T + 0.04, 2.6, 0.5), b = seg(t, T + 0.82, T + 1.0, E.inC);
-      sh.set(lerpCam(c0, c1, seg(t, T + 0.08, T + 0.62, E.ioC)));
-      sh.pose({ x: -(1 - a) * W * 0.95, ry: lerp(-42, L ? -6 : -4, sw), rx: 4, y: -b * H * 1.2, bx: (1 - a) * 110, by: b * 120, s: beatPulse(t, T), bright: 1 + 0.2 * (1 - a) });
+      sh.pose({ x: -(1 - a) * W * 0.95, ry: lerp(-42, L ? -6 : -4, sw), rx: 4, y: -b * H * 1.2, bx: (1 - a) * 110, by: b * 120, s: beatPulse(t, T) * (1 + 0.05 * seg(t, T + 0.08, T + 0.9, E.outQ)), bright: 1 + 0.2 * (1 - a) });
     };
   }, { z: 30 });
 
@@ -741,7 +781,7 @@
       background: 'radial-gradient(circle, rgba(255,253,245,1) 0%, rgba(255,236,190,.95) 9%, rgba(245,212,126,.55) 22%, rgba(238,188,78,.18) 42%, rgba(238,188,78,0) 66%)', opacity: 0 });
     const streak = el('div', 'abs', Lr, { left: -W * 0.2 + 'px', top: CY - 4 * U + 'px', width: W * 1.4 + 'px', height: 8 * U + 'px', mixBlendMode: 'screen', opacity: 0,
       background: 'linear-gradient(90deg, rgba(238,188,78,0), rgba(255,246,220,.95) 50%, rgba(238,188,78,0))', boxShadow: '0 0 40px rgba(238,188,78,.9)' });
-    const ring = el('div', 'abs', Lr, { left: CX - 500 * U + 'px', top: CY - 500 * U + 'px', width: 1000 * U + 'px', height: 1000 * U + 'px', borderRadius: '50%', border: `${8 * U}px solid rgba(255,236,190,.9)`, boxShadow: '0 0 60px rgba(238,188,78,.8), inset 0 0 40px rgba(238,188,78,.4)', opacity: 0 });
+    const ring = el('div', 'abs', Lr, { left: CX - 500 * U + 'px', top: CY - 500 * U + 'px', width: 1000 * U + 'px', height: 1000 * U + 'px', borderRadius: '50%', boxSizing: 'border-box', border: `${8 * U}px solid rgba(255,236,190,.9)`, boxShadow: '0 0 60px rgba(238,188,78,.8), inset 0 0 40px rgba(238,188,78,.4)', opacity: 0 });
     const white = el('div', 'fill', Lr, { background: '#fff8e8', opacity: 0 });
     const NP = 120;
     return (t) => {
