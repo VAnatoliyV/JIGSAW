@@ -9,7 +9,7 @@ const b = await chromium.launch({ args: ['--disable-web-security', '--allow-file
 const p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
 p.on('console', m => { if (['error', 'warning'].includes(m.type())) console.log('console:', m.text().slice(0, 300)); });
 p.on('pageerror', e => console.log('pageerror:', e.message));
-await p.goto(`http://localhost:8800/film/index.html?w=${w}&h=${h}`);
+await p.goto(`http://localhost:8800/film/index.html?w=${w}&h=${h}${process.env.FILM_QS ? '&' + process.env.FILM_QS : ''}`);
 await p.waitForFunction(() => window.READY === true, null, { timeout: 120000 });
 for (const t of ts) {
   const tt = +t;

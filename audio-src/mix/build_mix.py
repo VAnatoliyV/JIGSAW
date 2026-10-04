@@ -21,33 +21,41 @@ Outputs
   assets/audio/final_mix_analysis.png                spectrogram + waveform + loudness + duck curves
 
 Signal flow
-  VO edit : v09's internal pauses are tightened (silence only, 8 ms crossfades) so its last word clears the 48.0 impact
+  VO edit : silence-only tightening (latest pause first, 8 ms crossfades) so the last word clears a planned accent:
+            v02 ends 11.71 (11.75 stamp), v09 ends 47.91 (48.0 impact), v15 ends 85.93 (86.0 montage cut).  Line starts
+            stay on timeline vo[i].t; v16/v17/v19 (word-synced kinetic type in the film) are not touched.
   VO line : 24k->48k (polyphase, Kaiser) -> 5/20 ms edge fades -> HPF 80 Hz (24 dB/oct) -> -3 dB @150 Hz (boom)
             -> +1.5 dB @420 Hz (body) -> +2 dB @3.5 kHz (presence) -> -1.5 dB @6.5 kHz -> split-band de-esser
             (5-9 kHz) -> 3:1 soft-knee compressor (10/120 ms) -> 2x-oversampled parallel tanh warmth
             -> 'air' (single-sideband copy of the 5.5-11 kHz band shifted up 5.5 kHz, -12 dB: the 24 kHz takes stop at 11 kHz)
-            -> per-line BS.1770 levelling -> phrase rides ('Updated in seconds', 'Stop guessing')
-            -> placed at vo[i].t on the dry VO bus (mono, centred) -> true-peak VO limiter 3 dB under the master ceiling
+            -> per-line BS.1770 levelling -> phrase rides ('Updated in seconds' +1.5, 'Stop guessing' +0.6, montage
+            'Enchanting' -1.0) -> placed at vo[i].t on the dry VO bus (mono, centred) -> true-peak VO limiter 3 dB under
+            the master ceiling (the master limiter no longer reacts to consonants)
   VO rev  : dry bus -> HPF 180 Hz / LPF 6.5 kHz send -> synthetic dark plate/room IR (20 ms pre-delay, RT ~0.7 s)
             -> M/S width on the wet only -> wet at -20 LU re dry
   Duck    : key = dry-VO RMS (10 ms) -> speech regions; pauses < 2.1 s are bridged unless a planned hit sits in the gap
-            with room for the music to come back (then the duck is released before the hit and re-applied after it).
-            Linear-in-dB ramps: 0.40 s look-ahead attack (finished 50 ms before the first phoneme), 0.20 s hold,
-            0.80 s release, 60 ms corner smoothing.  A slower 'pocket' envelope (bridges 4 s, 1.0/1.5 s ramps) carries a
-            static 1-4 kHz EQ pocket on the orchestra across VO sections.
+            with room for the music to come back (then the duck is released before the hit and re-applied after it;
+            a hit inside a bridged gap gets a drums/fx/SFX punch-through).  Linear-in-dB ramps: 0.50 s look-ahead attack
+            (finished 50 ms before the first phoneme), 0.20 s hold, 0.90 s release, 60 ms corner smoothing.  A slower
+            'pocket' envelope (bridges 4 s, 1.0/1.5 s ramps) carries a static 1-4 kHz EQ pocket on the orchestra.
             pitched (melody/strings/brass/choir/low) : -b broadband, -(b+band) in 1-4 kHz, -pocket in 1-4 kHz (slow)
-            drums_perc+fx_hits                     : -perc broadband, -(perc+pband) in 1-4 kHz (punch-through at bridged hits)
-            SFX                                    : -2 dB on UI sounds while speaking; impacts/hits/stamps/anvil/risers exempt
-            Depths are solved per line (ladder) so the VO beats the background by >= +9 dB in 1-4 kHz.
+            drums_perc+fx_hits                     : -perc broadband, -(perc+pband) in 1-4 kHz
+            SFX                                    : -sfx on UI sounds while speaking; impacts/hits/stamps/anvil/risers exempt
+            Depths are solved per line on a ladder (minimal effort) so that the VO beats the background by >= +9.5 dB in
+            1-4 kHz over the line's speech-core 20 ms frames AND every 0.5 s window clears +3 dB (1-4 kHz and K-weighted).
   Protect : every accent (SFX impact/hit/stamp/anvil/coin/zap cue, or a detected drums/fx_hits accent) that lands on
-            speech gets a short dip on drums+fx_hits+SFX (15 ms ramp before the transient, 120 ms hold, 200 ms release),
-            depth solved so the VO stays >= +4.5 dB (K-weighted) / +6.5 dB (1-4 kHz) over the background in the 0-300 ms window.
-  Hits    : 16/96/104/116 s: no fader rides; contrast instead: a 4-5 dB 'suck-out' of the score 0.30-0.004 s before each
-            hit, montage bars 41-43 -1.5 dB, finale bars 57-58 -2 dB, -2.5 dB of sub (<90 Hz) on the hits (limiter
-            headroom), and phone-translation layers on the SFX bus: the hit's own impact one-shot band-passed 150-500 Hz
-            (body) + a 'hit' one-shot high-passed at 700 Hz (2-5 kHz crack).  Score +2 dB high shelf at 11 kHz.
+            speech gets a short dip on drums+fx_hits+SFX (and half of it on the orchestra's 1-4 kHz, max 5 dB): 15 ms
+            ramp before the transient, 120 ms hold (to the end of the line if it ends within 0.5 s), 200 ms release;
+            depth solved so the VO stays >= +4.5 dB (K-weighted) / +6.5 dB (1-4 kHz) over the background in the window.
+  Hits    : 16/96/104/116 s: a 4-5 dB 'suck-out' of the score 0.30-0.004 s before each hit, montage bars 41-43 -1.5 dB,
+            finale -1.5 dB under the CTA and -2 dB in bars 57-58, -3 dB of sub (<90 Hz) on the hits (-6 dB at 96 s),
+            rides from the hit (score pitched +3.5, drums/fx +1.5, SFX +3 dB, 0.4 s + 0.3 s), and phone-translation
+            layers on the SFX bus: a low-crest drum-body tone (A3->D3, partials 1-4), the hit's impact one-shot
+            band-passed 150-500 Hz, a 'hit' one-shot crack (>700 Hz), an anvil ring (>400 Hz, out by 0.6 s) and a faint
+            virtual bass (200-1200 Hz harmonics of the hit's own sub); 96 s gets +5 dB of these.  SFX bus transient
+            limiter (gain-only, 10 ms release) at the master ceiling.  Score +2 dB high shelf at 11 kHz.
   Master  : glue (2:1 soft knee, 30/200 ms, stereo-linked) -> gain to -14 LUFS -> look-ahead true-peak limiter
-            (4x oversampled detector, ceiling -1.2 dBTP, 4 ms look-ahead, 80 ms release) -> 0.3 s fade to digital
+            (4x oversampled detector, ceiling -1.2 dBTP, 4 ms look-ahead, 40 ms release) -> 0.3 s fade to digital
             silence -> TPDF dither -> 24-bit.
 """
 from __future__ import annotations
@@ -94,11 +102,12 @@ P = dict(
     comp_median_gr_db=3.0,      # threshold is calibrated so the median GR on voiced frames is this
     sat_drive=2.0, sat_mix=0.25,
     air_band=(5500.0, 11000.0), air_shift_hz=5500.0, air_db=-12.0, air_hpf=10500.0, air_lpf=14000.0,
-    vo_rides={'v17': [['Updated in seconds', 1.5]], 'v18': [['Stop guessing', 0.8], ['Start crafting', 0.4]]},
+    vo_rides={'v15': [['Enchanting', -1.0]],    # clip gain: the hottest word of the montage list (+1.5 dB over its neighbours)
+              'v17': [['Updated in seconds', 1.5]], 'v18': [['Stop guessing', 0.6], ['Start crafting', 0.3]]},
     ride_ramp_s=0.04,
     vo_lift_max_db=0.9,         # max line-loudness lift over the levelled value (phrase rides + solver lift): +/-1 LU
     vo_tp_rel_db=-3.0, vo_lim_la_ms=1.5, vo_lim_rel_ms=40.0, master_gain_guess_db=0.5,
-    sfx_tp_rel_db=-2.0, sfx_lim_la_ms=1.5, sfx_lim_rel_ms=10.0,
+    sfx_tp_rel_db=0.0, sfx_lim_la_ms=1.5, sfx_lim_rel_ms=10.0,
     # ---- VO reverb
     rev_predelay_ms=20.0, rev_rt60=0.70, rev_len_s=1.6, rev_wet_lu=-20.0, rev_width=0.55,
     rev_send_hpf=180.0, rev_send_lpf=6500.0, rev_dark_lpf=5500.0,
@@ -111,12 +120,14 @@ P = dict(
     punch_through=[0.03, 0.35, 0.30],     # bridged hit: drums/fx_hits/SFX duck lifted t-0.03 .. t+0.35, back over 0.30 s
     dip_band=(1000.0, 4000.0),
     ratio_target_db=9.0, ratio_margin_db=0.5, passes=2,
+    ratio25_target_db=9.3, line_kw_target_db=6.0,   # ... and >= +6 dB broadband K-weighted over the speech-core frames
+                   # ... and >= +9.3 dB over the broader voiced set (within 25 dB of the line max)
     floor_band_db=3.0, floor_kw_db=3.0,   # every 0.5 s window of a line (speech-core frames) must also clear these
     floor_min_frames=8,                   # ... if it holds >= 8 speech-core 20 ms frames (160 ms of speech; word tails go to the accent check)
     # ---- accent protect (word-level masking)
     protect_sfx_types=['impact', 'hit', 'stamp', 'anvil', 'coin', 'zap'],
     accent_rise_db=6.0, accent_over_med_db=10.0,
-    protect_target_kw=4.5, protect_target_band=6.5, protect_max_db=10.0, protect_win_s=0.30,
+    protect_target_kw=4.0, protect_target_band=4.0, protect_max_db=10.0, protect_win_s=0.30,
     protect_min_gain_db=1.0, protect_slack_db=0.5, protect_pitched_frac=0.5, protect_pitched_max_db=5.0,   # skip dips that buy < 1 dB; settle 0.5 dB short of an unreachable target
     protect_pre_s=0.02, protect_att_s=0.015, protect_hold_s=0.12, protect_rel_s=0.20, protect_tail_max_s=0.50,
     check_kw_db=3.0, check_band_db=3.0,   # per-event report thresholds (0-300 ms window, speech-core frames)
@@ -131,15 +142,16 @@ P = dict(
                [99.9, 0.1, 101.7, 0.9, -3.5]],     # the 100-104 riser held down under 'Updated in seconds'
     sfx_protect_types={'impact': 0.6, 'anvil': 0.6, 'hit': 0.3, 'stamp': 0.3,
                        'riser': None, 'reverse': None, 'swell': None},   # UI-duck exemption tail after accent (None = to accent)
+    hit_sub_extra_db={'96.0': -3.0},   # the 96 s hit is mostly sub: give its phone layers the peak headroom
     hit_sub_hz=90.0, hit_sub_db=-3.0, hit_sub_pre_s=0.01, hit_sub_hold_s=0.50, hit_sub_rel_s=0.40,
     hit_body_band=(150.0, 500.0), hit_body_db=3.0,
     hit_crack_hpf=700.0, hit_crack_db=0.0,
     vbass_src_hz=100.0, vbass_band=(200.0, 1200.0), vbass_drive=3.0, vbass_even=0.5, vbass_hold_s=0.35, vbass_rel_s=0.25,
-    hit_layer_extra_db={'96.0': 4.0},   # the 96 s hit is mostly sub: more of its phone layers
-    tone_f0=220.0, tone_f1=146.8, tone_glide_s=0.08, tone_decay_s=0.22, tone_len_s=0.8, tone_partials_db=[0.0, -5.0, -9.0, -13.0],
-    tone_rel_db=-3.0,            # drum-body tone layer re the score's hit (K-weighted 400 ms), as mixed
-    hit_anvil_hpf=400.0, hit_anvil_db=2.0, hit_anvil_hold_s=0.30, hit_anvil_rel_s=0.30,
-    vbass_rel_db=-12.0,          # virtual-bass layer level re the score's hit (K-weighted 400 ms), as mixed
+    hit_layer_extra_db={'96.0': 5.0},   # the 96 s hit is mostly sub: more of its phone layers
+    tone_f0=220.0, tone_f1=146.8, tone_glide_s=0.08, tone_decay_s=0.32, tone_att_s=0.012, tone_len_s=0.8, tone_partials_db=[0.0, -5.0, -9.0, -13.0],
+    tone_lufs=-14.0,             # drum-body tone layer, K-weighted 400 ms as mixed (pre-master)
+    hit_anvil_hpf=400.0, hit_anvil_db=2.0, hit_anvil_att_s=0.006, hit_anvil_hold_s=0.30, hit_anvil_rel_s=0.30,   # onsets staggered vs the impact click
+    vbass_lufs=-26.0,            # virtual-bass layer, K-weighted 400 ms as mixed (pre-master)
     ride_pitched_db=3.5, ride_perc_db=1.5, ride_sfx_db=3.0, ride_hold_s=0.40, ride_out_s=0.30,
     music_air=(11000.0, 2.0),
     # ---- master
@@ -743,7 +755,7 @@ def main():
             b0 = (ph[k + 1]['a'] - vo[i]['t'] + b) / 2 if k + 1 < len(ph) else len(x) / SR
             tt = np.arange(len(x)) / SR
             rr = P['ride_ramp_s']
-            g = np.maximum(g, gdb_ * trap(tt, a0 - rr / 2, rr if k > 0 else 1e-6, b0 - rr / 2, rr if k + 1 < len(ph) else 1e-6))
+            g = g + gdb_ * trap(tt, a0 - rr / 2, rr if k > 0 else 1e-6, b0 - rr / 2, rr if k + 1 < len(ph) else 1e-6)
             done.append((ph[k]['label'], gdb_, ph[k]['a'], ph[k]['b']))
         r = 10 ** (g / 20)
         lift = line_loudness_mono(x * r, dual=True) - line_loudness_mono(x, dual=True)
@@ -813,8 +825,6 @@ def main():
     sfx_net_hit_db = P['sfx_fader_db'] + P['ride_sfx_db']
     layer_log = []
     for k, th in enumerate(BIG_HITS):
-        i0, i1 = int(th * SR), int((th + 0.4) * SR)
-        ref = kpow(pitched[i0:i1] + perc[i0:i1]).mean()            # the score's hit, K-weighted 400 ms (pre-master)
         xg = 10 ** (P['hit_layer_extra_db'].get(f'{th:.1f}', 0.0) / 20)
         # virtual bass: harmonics of the hit's own sub (score drums/fx_hits + SFX impact), 110-700 Hz -> the boom reads on phones
         a, b = int((th - 0.02) * SR), min(N, int((th + 1.2) * SR))
@@ -825,7 +835,7 @@ def main():
         h = signal.sosfiltfilt(vb_bp, h, axis=0)
         h *= trap(np.arange(b - a) / SR - 0.02, -0.002, 0.002, P['vbass_hold_s'], P['vbass_rel_s'])[:, None]
         lev = kpow(h[int(0.02 * SR):int(0.42 * SR)]).mean()
-        h *= math.sqrt(ref / lev) * 10 ** ((P['vbass_rel_db'] - sfx_net_hit_db) / 20)
+        h *= math.sqrt(10 ** ((P['vbass_lufs'] + 0.691) / 10) / lev) * 10 ** (-sfx_net_hit_db / 20)
         sfx_raw[a:b] += h * xg
         # tone: a low-crest 'drum body' (A3 -> D3 pitch drop, partials 1-4, ~0.2 s decay) - the boom's body in the band a
         # phone speaker can play, in the film's key
@@ -833,10 +843,10 @@ def main():
         f = P['tone_f1'] + (P['tone_f0'] - P['tone_f1']) * np.exp(-tt / P['tone_glide_s'])
         ph_ = 2 * np.pi * np.cumsum(f) / SR
         tone = sum(10 ** (gp / 20) * np.sin((k + 1) * ph_) for k, gp in enumerate(P['tone_partials_db']))
-        tone *= np.minimum(1.0, tt / 0.003) * np.exp(-tt / P['tone_decay_s']) * np.clip((P['tone_len_s'] - tt) / 0.05, 0, 1)
+        tone *= np.minimum(1.0, tt / P['tone_att_s']) * np.exp(-tt / P['tone_decay_s']) * np.clip((P['tone_len_s'] - tt) / 0.05, 0, 1)
         tone = np.stack([tone, tone], axis=1)
         lev = kpow(tone[:int(0.4 * SR)]).mean()
-        tone *= math.sqrt(ref / lev) * 10 ** ((P['tone_rel_db'] - sfx_net_hit_db) / 20) * xg
+        tone *= math.sqrt(10 ** ((P['tone_lufs'] + 0.691) / 10) / lev) * 10 ** (-sfx_net_hit_db / 20) * xg
         a0 = int(round(th * SR))
         n = min(len(tone), N - a0)
         sfx_raw[a0:a0 + n] += tone[:n]
@@ -853,7 +863,7 @@ def main():
         av = anv['variant'] if anv else 'anvil_2'
         one, _ = sf.read(ROOT / 'assets/audio/sfx' / oneshots[av]['file'], dtype='float64')
         one = signal.sosfiltfilt(signal.butter(2, P['hit_anvil_hpf'], 'highpass', fs=SR, output='sos'), one, axis=0)
-        one *= trap(np.arange(len(one)) / SR, 0.0, 0.002, P['hit_anvil_hold_s'], P['hit_anvil_rel_s'])[:, None]   # out before the next VO line
+        one *= trap(np.arange(len(one)) / SR, 0.0, P['hit_anvil_att_s'], P['hit_anvil_hold_s'], P['hit_anvil_rel_s'])[:, None]   # out before the next VO line
         a = int(round(th * SR)) - int(round(oneshots[av]['anchor_s'] * SR))
         n = min(len(one), N - a)
         sfx_raw[a:a + n] += one[:n] * 10 ** (P['hit_anvil_db'] / 20) * xg
@@ -872,7 +882,7 @@ def main():
         a, b = int((th - 1.0) * SR), min(N, int((th + 2.0) * SR))
         tt = np.arange(a, b) / SR
         w = trap(tt, th - P['hit_sub_pre_s'], 0.005, th + P['hit_sub_hold_s'], P['hit_sub_rel_s'])
-        g = 1.0 - 10 ** (P['hit_sub_db'] * w / 20)
+        g = 1.0 - 10 ** ((P['hit_sub_db'] + P['hit_sub_extra_db'].get(f'{th:.1f}', 0.0)) * w / 20)
         for arr in (pitched, perc, sfx_raw):
             arr[a:b] -= g[:, None] * signal.sosfiltfilt(lp_sub, arr[a:b], axis=0)
 
@@ -996,12 +1006,13 @@ def main():
         vo_kw_f = kpow(vo_meas)[:NF * FH].reshape(NF, FH).sum(axis=1)
         del vo_meas
         # speech-core frames per line (VO K-weighted within 15 dB of the line's 95th percentile) + 0.5 s windows
-        spans_f, core, wins = [], [], []
+        spans_f, core, wins, v25 = [], [], [], []
         speech_core = np.zeros(NF, bool)
         for i, l in enumerate(vst):
             sp = np.where((t_f >= l['start']) & (t_f < l['end']))[0]
             lv = db(vo_kw_f[sp])
             cm = lv > np.percentile(lv, 95) - 15
+            v25.append(lv > lv.max() - 25)          # broader 'voiced' set (within 25 dB of the line max), as the review measured
             speech_core[sp[cm]] = True
             ws = []
             for w0 in np.arange(l['start'], l['end'] - 0.25, 0.25):
@@ -1022,6 +1033,8 @@ def main():
             vbf, vkf, bgb, bgk = vb * vo_band_f[sp] * w, vb * vo_kw_f[sp] * w, bgb * w, bgk * w
             rb = 10 * math.log10(vbf[cm].sum() / bgb[cm].sum())
             rk = 10 * math.log10(vkf[cm].sum() / bgk[cm].sum())
+            vm = v25[i]
+            rb25 = 10 * math.log10(vbf[vm].sum() / bgb[vm].sum())
             if len(W):
                 wb = 10 * np.log10((W @ vbf) / (W @ bgb))
                 wk = 10 * np.log10((W @ vkf) / (W @ bgk))
@@ -1029,9 +1042,10 @@ def main():
             else:
                 worst_b = worst_k = 99.0
             share = np.einsum('fi,fii,fi->i', g[cm], C_band[sp[cm]], g[cm])
-            return rb, rk, worst_b, worst_k, share / share.sum()
+            return rb, rk, worst_b, worst_k, share / share.sum(), rb25
 
-        ok_line = lambda r: r[0] >= goal and r[2] >= P['floor_band_db'] and r[3] >= P['floor_kw_db']
+        ok_line = lambda r: (r[0] >= goal and r[5] >= P['ratio25_target_db'] and r[1] >= P['line_kw_target_db']
+                             and r[2] >= P['floor_band_db'] and r[3] >= P['floor_kw_db'])
 
         # -------------------------------------------------------------- per-line duck solver (minimal effort on the ladder)
         solved = []
@@ -1051,7 +1065,7 @@ def main():
                 s = b
             kn = knobs_at(s)
             kn['vob'] = min(kn['vob'], vst[i]['vob_cap'])
-            rb, rk, wb, wk, share = line_eval(i, kn)
+            rb, rk, wb, wk, share, _ = line_eval(i, kn)
             r0 = line_eval(i, knobs_at(0.0))[0]
             vst[i].update(effort=s, knobs=kn, r_pred=rb, rk_pred=rk, wb_pred=wb, wk_pred=wk, r_nominal=r0, share=share)
             solved.append(kn)
@@ -1096,11 +1110,14 @@ def main():
             wv = dip_shape((cidx + 0.5) / CR, ev['t'], ev['hold'])
             vb = 10 ** (vst[li]['knobs']['vob'] / 10)
             w = wf[fr]
+            # the orchestra's 1-4 kHz only joins the dip for planned (SFX-cued) accents, never for the score's own groove
+            pfrac = P['protect_pitched_frac'] if any(x.startswith('sfx:') for x in ev['src']) else 0.0
+            ev['pfrac'] = pfrac
 
             def margins(d):
                 gd = base.copy()
                 gd[2:5] -= d * wv
-                gd[1] -= min(P['protect_pitched_frac'] * d, P['protect_pitched_max_db']) * wv
+                gd[1] -= min(pfrac * d, P['protect_pitched_max_db']) * wv
                 bgb, bgk = bg_frames(frame_lin(gd), fr)
                 return (10 * math.log10(vb * (w * vo_kw_f[fr]).sum() / (w * bgk).sum()),
                         10 * math.log10(vb * (w * vo_band_f[fr]).sum() / (w * bgb).sum()))
@@ -1130,7 +1147,7 @@ def main():
             c1 = min(NC, int((ev['t'] + ev['hold'] + rel) * CR) + 2)
             wv_ = dip_shape((np.arange(c0, c1) + 0.5) / CR, ev['t'], ev['hold'])
             PROT[2:5, c0:c1] = np.minimum(PROT[2:5, c0:c1], -b * wv_)
-            PROT[1, c0:c1] = np.minimum(PROT[1, c0:c1], -min(P['protect_pitched_frac'] * b, P['protect_pitched_max_db']) * wv_)
+            PROT[1, c0:c1] = np.minimum(PROT[1, c0:c1], -min(pfrac * b, P['protect_pitched_max_db']) * wv_)
         n_dip = sum(1 for e in events if e['depth'] > 0.05)
         log(f'pass {pass_ + 1} protect: {n_dip} dips, max {max([e["depth"] for e in events] + [0]):.1f} dB')
 
@@ -1384,7 +1401,7 @@ def verify(ctx):
     for l in vst:
         if l['rides']:
             o(f'  phrase ride {l["id"]}: ' + ', '.join(f'"{lab}" {g:+.1f} dB ({a:.2f}-{b:.2f} s)' for lab, g, a, b in l['rides'])
-              + f'  (line loudness +{l["ride_lift"]:.2f} LU; solver lift allowed {l["vob_cap"]:.2f} dB)')
+              + f'  (line loudness {l["ride_lift"]:+.2f} LU; solver lift allowed {l["vob_cap"]:.2f} dB)')
     o(f'  ducking: key = dry VO RMS 10 ms; pauses < {P["duck_bridge_s"]} s bridged (unless a planned hit can punch through:'
       f' {", ".join(f"{t:g}" for t in P["punch_times"])}); look-ahead attack {P["duck_att_s"]:.2f} s finished {P["duck_pre_s"] * 1000:.0f} ms before'
       f' the first phoneme, hold {P["duck_hold_s"]:.2f} s, release {P["duck_rel_s"]:.2f} s (linear in dB, {P["duck_corner_s"] * 1000:.0f} ms corner smoothing);'
@@ -1423,7 +1440,7 @@ def verify(ctx):
     def ratio(num, den, idx):
         return 10 * math.log10(num[idx].sum() / max(den[idx].sum(), 1e-30)) if len(idx) else float('nan')
 
-    hdr = ('  line  start    end   dur  gap>  lineLU  Mvoic  STmax |  r1-4k  rKW | core: p10 1-4k  p10 KW  %<0 1-4k  %<0 KW |'
+    hdr = ('  line  start    end   dur  gap>  lineLU  Mvoic  STmax |  r1-4k  r25  rKW | core: p10 1-4k  p10 KW  %<0 1-4k  %<0 KW |'
            ' worst 0.5s: 1-4k   KW  (at)  | effort  duck b/band/pocket/drm/drm.band/sfx/voB  r@nom  bg 1-4k pit/drm/sfx')
     o(hdr)
     o('  ' + '-' * (len(hdr) - 2))
@@ -1443,6 +1460,9 @@ def verify(ctx):
         rk = ratio(vk20, bk20, core)
         fb = db(vb20[core]) - db(bb20[core])
         fk = db(vk20[core]) - db(bk20[core])
+        lsp = np.where((t20 >= l['start']) & (t20 < l['end']))[0]
+        v25_ = lsp[db(vk20[lsp]) > db(vk20[lsp]).max() - 25]
+        rb25 = ratio(vb20, bb20, v25_)
         worst_b, worst_k, worst_t = 99.0, 99.0, 0.0
         for w0 in np.arange(l['start'], l['end'] - 0.25, 0.25):
             c = core_frames(w0, w0 + 0.5, i)
@@ -1454,25 +1474,26 @@ def verify(ctx):
         nxt = vst[i + 1]['start'] if i + 1 < len(vst) else DUR
         gap = nxt - l['end']
         gaps.append(gap)
-        l.update(lineLU=L_line, M_voiced=M_voiced, ST_max=ST_max, r_band=rb, r_kw=rk, p10b=float(np.percentile(fb, 10)),
+        l.update(lineLU=L_line, M_voiced=M_voiced, ST_max=ST_max, r_band=rb, r_kw=rk, r_band25=rb25, p10b=float(np.percentile(fb, 10)),
                  p10k=float(np.percentile(fk, 10)), lt0b=float(100 * np.mean(fb < 0)), lt0k=float(100 * np.mean(fk < 0)),
                  worst_b=worst_b, worst_k=worst_k, worst_t=worst_t, gap=gap)
         rows.append(l)
         kn = l['knobs']
         o(f"  {l['id']:4s} {l['start']:6.2f} {l['end']:6.2f} {l['dur']:5.2f} {gap:5.2f}  {L_line:6.2f} {M_voiced:6.2f} {ST_max:6.2f} |"
-          f"  {rb:+5.1f}  {rk:+5.1f} |      {l['p10b']:+6.1f}  {l['p10k']:+6.1f}    {l['lt0b']:4.0f}%   {l['lt0k']:4.0f}% |"
+          f"  {rb:+5.1f} {rb25:+5.1f} {rk:+5.1f} |      {l['p10b']:+6.1f}  {l['p10k']:+6.1f}    {l['lt0b']:4.0f}%   {l['lt0k']:4.0f}% |"
           f"       {worst_b:+5.1f} {worst_k:+5.1f} ({worst_t:6.2f}) | {l['effort']:+5.2f}  {kn['b']:.1f}/{kn['band']:.1f}/{kn['pocket']:.1f}/{kn['perc']:.1f}/{kn['pband']:.1f}/{kn['sfx']:.1f}/{kn['vob']:+.1f}"
           f"   {l['r_nominal']:+5.1f}   {100 * (l['share'][0] + l['share'][1]):3.0f}%/{100 * (l['share'][2] + l['share'][3]):3.0f}%/{100 * l['share'][4]:3.0f}%"
-          f"  {'OK' if rb >= P['ratio_target_db'] and min(worst_b, worst_k) >= min(P['floor_band_db'], P['floor_kw_db']) - 0.5 else 'LOW'}")
+          f"  {'OK' if min(rb, rb25) >= P['ratio_target_db'] and min(worst_b, worst_k) >= min(P['floor_band_db'], P['floor_kw_db']) - 0.5 else 'LOW'}")
     o('  columns: lineLU = BS.1770 gated loudness of the VO stem over the line (as heard); Mvoic = energy-mean momentary loudness of voiced 400 ms blocks;'
       ' STmax = max short-term (3 s) touching the line;')
     o('           r1-4k / rKW = VO / background (music_ducked+sfx) energy ratio over the line\'s speech-core 20 ms frames (VO within 15 dB of the line\'s'
-      ' 95th percentile, K-weighted) in 1-4 kHz / broadband K-weighted;')
+      ' 95th percentile, K-weighted) in 1-4 kHz / broadband K-weighted; r25 = 1-4 kHz ratio over all voiced frames (VO within 25 dB of the line max, the review\'s definition);')
     o('           core p10 = 10th-percentile frame ratio, %<0 = share of speech-core frames where the background is louder than the VO;'
       ' worst 0.5s = lowest ratio over 0.5 s windows (0.25 s hop) of the line;')
     o('           effort/duck = solved ladder position and depths in dB (pitched broadband / pitched extra 1-4 kHz / slow pocket 1-4 kHz /'
       ' drums broadband / drums extra 1-4 kHz / SFX UI duck / VO line lift); r@nom = 1-4 kHz ratio at the nominal brief setting; bg = who fills the 1-4 kHz background.')
-    o(f'           solver goal per line: >= +{P["ratio_target_db"] + P["ratio_margin_db"]:.1f} dB in 1-4 kHz over the speech-core frames AND every 0.5 s window >= +{P["floor_band_db"]:.0f} dB (1-4 kHz)'
+    o(f'           solver goal per line: >= +{P["ratio_target_db"] + P["ratio_margin_db"]:.1f} dB in 1-4 kHz over the speech-core frames, >= +{P["ratio25_target_db"]} dB over all voiced frames,'
+      f' >= +{P["line_kw_target_db"]:.0f} dB K-weighted, AND every 0.5 s window >= +{P["floor_band_db"]:.0f} dB (1-4 kHz)'
       f' and >= +{P["floor_kw_db"]:.0f} dB (K-weighted); OK below = line >= +{P["ratio_target_db"]:.0f} dB and worst window within 0.5 dB of the floor.')
     spread = max(lineLU) - min(lineLU)
     medLU = float(np.median(lineLU))
@@ -1483,8 +1504,10 @@ def verify(ctx):
     o(f'  voiced momentary: spread {max(mv_all) - min(mv_all):.2f} LU (min {min(mv_all):.2f}, max {max(mv_all):.2f})')
     rbs = [r['r_band'] for r in rows]
     rks = [r['r_kw'] for r in rows]
-    o(f'  VO/background 1-4 kHz (speech-core): min {min(rbs):+.1f} dB ({rows[int(np.argmin(rbs))]["id"]}), median {np.median(rbs):+.1f} dB'
-      f'  -> {"OK" if min(rbs) >= P["ratio_target_db"] else "FAIL"} (>= +{P["ratio_target_db"]:.0f} dB every line)')
+    r25s = [r['r_band25'] for r in rows]
+    o(f'  VO/background 1-4 kHz: speech-core min {min(rbs):+.1f} dB ({rows[int(np.argmin(rbs))]["id"]}), median {np.median(rbs):+.1f} dB;'
+      f' all voiced frames (25 dB) min {min(r25s):+.1f} dB ({rows[int(np.argmin(r25s))]["id"]})'
+      f'  -> {"OK" if min(min(rbs), min(r25s)) >= P["ratio_target_db"] else "FAIL"} (>= +{P["ratio_target_db"]:.0f} dB every line, both frame sets)')
     o(f'  VO/background broadband K-weighted (speech-core): min {min(rks):+.1f} dB ({rows[int(np.argmin(rks))]["id"]}), median {np.median(rks):+.1f} dB')
     o(f'  worst 0.5 s window anywhere: 1-4 kHz {min(r["worst_b"] for r in rows):+.1f} dB, K-weighted {min(r["worst_k"] for r in rows):+.1f} dB;'
       f' speech-core frames with background louder than VO: 1-4 kHz {np.mean([r["lt0b"] for r in rows]):.0f}% (max {max(r["lt0b"] for r in rows):.0f}%),'
@@ -1610,6 +1633,22 @@ def verify(ctx):
         sb_ = np.where(m_, s, 0.0)
         o(f'    measured music gain slope at line starts/ends ({nm:9s}, as the review measured, accents excluded): fastest attack {sb_.min():6.1f} dB/s'
           f' ({tt[np.argmin(sb_)]:6.2f}s), fastest release {sb_.max():+6.1f} dB/s ({tt[np.argmax(sb_)]:6.2f}s), time > 20 dB/s {np.mean(np.abs(sb_) > 20) * DUR:.2f} s')
+    # measurement floor: the same aggregate slope where every component gain is provably constant (+-0.1 dB over 100 ms)
+    gchg = np.zeros(NC)
+    for j in range(5):
+        gchg = np.maximum(gchg, np.abs(np.roll(gdb[j], -50) - np.roll(gdb[j], 50)))
+    const = gchg < 0.1
+    const[:60] = False
+    const[-60:] = False
+    for nm in ('broadband', '1-4 kHz'):
+        for style in ('mix automation', 'as the review measured'):
+            s0 = meas[(nm, style, 'hit/suck/protect')]
+            tt = (np.arange(len(s0)) + 0.5) * 0.01
+            m_ = np.interp(tt, t_c, const.astype(float)) > 0.5
+            sc = np.where(m_, s0, 0.0)
+            o(f'    measurement floor ({nm:9s}, {style:22s}) where all 5 component gains are constant ({np.mean(m_) * DUR:.0f} s of film):'
+              f' fastest fall {sc.min():6.1f} dB/s, fastest rise {sc.max():+6.1f} dB/s, time > 20 dB/s {np.mean(np.abs(sc) > 20) * DUR:.2f} s'
+              f' -> score-composition changes alone (drums ducked less than the orchestra), not gain moves')
     # the fastest measured moves vs the designed gains at the same instant (composition check)
     def dslope(g, t_):
         i = int(t_ * CR)
@@ -1744,10 +1783,10 @@ def verify(ctx):
     o('  montage cuts (S50 peak / contrast vs the half-beat after): ' + ', '.join(f'{t_:.0f}s {p:.1f}/{c:+.1f}' for t_, p, c in mont))
     o(f'  hit treatment: suck-out {", ".join(f"{th:g}s -{d:g} dB" for th, d in P["suck"])} ({P["suck_start_s"]:.2f}-{P["suck_snap_s"] * 1000:.0f} ms before);'
       f' trims ' + ', '.join(f'{t0:g}-{t1:g}s {g:+.1f} dB' for t0, _, t1, _, g in P['music_trims'])
-      + f'; sub <{P["hit_sub_hz"]:.0f} Hz {P["hit_sub_db"]:+.1f} dB on the hits; rides (from the hit, {P["ride_hold_s"]} s hold, {P["ride_out_s"]} s out):'
+      + f'; sub <{P["hit_sub_hz"]:.0f} Hz {P["hit_sub_db"]:+.1f} dB on the hits (96 s {P["hit_sub_db"] + P["hit_sub_extra_db"].get("96.0", 0):+.1f} dB); rides (from the hit, {P["ride_hold_s"]} s hold, {P["ride_out_s"]} s out):'
       f' score pitched {P["ride_pitched_db"]:+.1f} dB, drums/fx {P["ride_perc_db"]:+.1f} dB, SFX {P["ride_sfx_db"]:+.1f} dB;'
-      f' layers on the SFX bus: drum-body tone ({P["tone_f0"]:.0f}->{P["tone_f1"]:.0f} Hz, partials 1-4, {P["tone_rel_db"]:+.0f} dB re the score hit) +'
-      f' virtual bass ({P["vbass_band"][0]:.0f}-{P["vbass_band"][1]:.0f} Hz harmonics of the hit\'s own sub, {P["vbass_rel_db"]:+.0f} dB) + '
+      f' layers on the SFX bus (96 s +{P["hit_layer_extra_db"].get("96.0", 0):g} dB): drum-body tone ({P["tone_f0"]:.0f}->{P["tone_f1"]:.0f} Hz, partials 1-4, {P["tone_lufs"]:.0f} LUFS-M pre-master) +'
+      f' virtual bass ({P["vbass_band"][0]:.0f}-{P["vbass_band"][1]:.0f} Hz harmonics of the hit\'s own sub, {P["vbass_lufs"]:.0f} LUFS-M) + '
       + ', '.join(f'{th:g}s {iv} 150-500 Hz body {P["hit_body_db"]:+.0f} dB / {hv} >700 Hz crack {P["hit_crack_db"]:+.0f} dB / {av} >400 Hz ring {P["hit_anvil_db"]:+.0f} dB' for th, iv, hv, av in ctx['layer_log']))
     o('')
 
@@ -1770,6 +1809,15 @@ def verify(ctx):
     o(f'  VO stem re its 1 kHz band: 125 Hz {Lv[np.argmin(np.abs(fc - 125))] - vref:+.1f}, 160 Hz {Lv[np.argmin(np.abs(fc - 160))] - vref:+.1f},'
       f' 250-800 Hz mean {np.mean(Lv[(fc >= 248) & (fc <= 810)]) - vref:+.1f}, 2.5-8 kHz mean {np.mean(Lv[(fc >= 2480) & (fc <= 8100)]) - vref:+.1f},'
       f' 12.5 kHz {Lv[np.argmin(np.abs(fc - 12699))] - vref:+.1f}; VO 160 Hz band {Lv[np.argmin(np.abs(fc - 160))] - tot:+.1f} dB re the mix total')
+    old_eq = np.vstack([peaking_sos(300.0, -2.0, 1.0), peaking_sos(3500.0, 2.0, 0.9)])     # the previous build's VO EQ
+    new_eq = np.vstack([peaking_sos(*e) for e in P['vo_eq']])
+    fq = np.array([125.0, 160.0, 250.0, 315.0, 400.0, 500.0, 630.0, 800.0, 1000.0, 2500.0, 3150.0, 4000.0, 5000.0, 6300.0, 8000.0])
+    _, ho = signal.sosfreqz(old_eq, worN=fq, fs=SR)
+    _, hn = signal.sosfreqz(new_eq, worN=fq, fs=SR)
+    dd = a2db(hn) - a2db(ho)
+    dd -= dd[list(fq).index(1000.0)]
+    o(f'  VO EQ change vs the previous build (re 1 kHz): 125 Hz {dd[0]:+.1f}, 160 Hz {dd[1]:+.1f}, 250-800 Hz {dd[2:8].mean():+.1f} (mean),'
+      f' 2.5-8 kHz {dd[9:].mean():+.1f} (mean) dB; plus the >10.5 kHz air layer and the score\'s +{P["music_air"][1]:.0f} dB shelf at {P["music_air"][0] / 1000:.0f} kHz')
     o('')
     o('[6] FILES')
     for pth in ['final_mix.wav', 'final_stems/vo.wav', 'final_stems/music_ducked.wav', 'final_stems/sfx.wav',
@@ -1879,9 +1927,8 @@ def make_png(path, fin, vo_s, mu_s, vst, ctx, tm_end, Mdb, st_sf, s_fin, st_s, s
     ax.set_ylim(min(-13.0, float(np.floor(gdb[:4].min())) - 1), 2)
     ax.set_ylabel('gain dB')
     ax.set_xlabel('time (s)')
-    ax.set_title(f'Ducking + automation: {P["duck_att_s"]:.2f} s look-ahead attack / {P["duck_rel_s"]:.2f} s release, pauses < {P["duck_bridge_s"]} s bridged,'
-                 ' slow 1-4 kHz pocket, pre-hit suck-outs, montage/finale trims; triangles = accent-protect dips under words')
-    ax.legend(loc='lower right', bbox_to_anchor=(1.0, 1.0), frameon=False, ncol=4, fontsize=9)
+    ax.set_title(f'Ducking + automation ({P["duck_att_s"]:.2f} s attack / {P["duck_rel_s"]:.2f} s release, pauses < {P["duck_bridge_s"]} s bridged; triangles = accent dips under words)')
+    ax.legend(loc='lower left', frameon=True, framealpha=0.9, ncol=4, fontsize=8)
 
     ax = fig.add_subplot(gs[4])
     ids = [l['id'] for l in vst]

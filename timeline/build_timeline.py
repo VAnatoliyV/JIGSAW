@@ -146,7 +146,7 @@ VO = [
   ("v15", 80.3,   "Refining. Enchanting. Potions and food. Your island. Even the roads to Caerleon."),
   ("v16", 88.6,   "And the market never sleeps."),
   ("v17", 96.6,   "Six thousand, nine hundred and eighty-five items. Updated in seconds."),
-  ("v18", 104.6,  "Stop guessing. Start crafting."),
+  ("v18", 105.98, "Stop guessing. Start crafting."),
   ("v19", 108.6,  "Albion Journal. Free, in your browser."),
 ]
 

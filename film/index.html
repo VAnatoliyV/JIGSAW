@@ -23,7 +23,11 @@
 <body>
 <div id="stage"></div>
 <script src="data/timeline.js"></script>
-<script src="data/manifest.js"></script>
+<script>
+  // ?manifest=<path> loads an alternative capture manifest (development only, e.g. devcap/manifest_dev.js).
+  // A dev manifest sets window.MANIFEST_DEV = true and the film then shows a red DEV DATA badge.
+  document.write('<script src="' + (new URLSearchParams(location.search).get('manifest') || 'data/manifest.js') + '"><\/script>');
+</script>
 <script src="data/items_sample.js"></script>
 <script src="vendor/albion_logo.js"></script>
 <script src="engine.js"></script>
@@ -43,6 +47,12 @@
     FX.init();
     const imgs = [...document.images];
     await Promise.all(imgs.map(i => i.decode().catch(() => console.warn('img failed', i.src))));
+    if (window.MANIFEST_DEV) {
+      const b = document.createElement('div');
+      b.textContent = 'DEV DATA — NOT FOR RELEASE';
+      Object.assign(b.style, { position: 'absolute', left: '0', top: '0', zIndex: 9999, background: '#d11', color: '#fff', font: '700 22px Inter', padding: '6px 12px' });
+      document.getElementById('stage').appendChild(b);
+    }
     FX.renderFrame(0);
     window.READY = true;
   })();

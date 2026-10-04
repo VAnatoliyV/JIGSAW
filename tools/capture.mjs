@@ -180,21 +180,27 @@ async function boot() {
 async function iconsOk() {
   return page.evaluate(() => { const i = document.querySelector('#drift img'); return !!(i && i.complete && i.naturalWidth > 0); });
 }
-const liveOn = () => page.evaluate(() => { try { return liveIsOn(); } catch (e) { return false; } });
+const liveSt = () => page.evaluate(() => { try { return { on: liveIsOn(), forced: !!window.__capLiveAt && liveOkAt === window.__capLiveAt }; } catch (e) { return { on: false, forced: false }; } });
 async function liveMode() {
   // The live site shows "⚡ seconds" once its live price feed answers (owner-confirmed: updates are instant now,
-  // not the 12-minute snapshot step). If the real feed is reachable, give it a moment to answer on its own; else
-  // mark the feed as answered and repaint, exactly as the site does on a reply (recorded as net.liveForced).
-  if (NET.live && await liveOn()) return;
-  if (NET.live && DATA_ON) {
-    await page.waitForFunction(() => { try { return liveIsOn(); } catch (e) { return false; } }, null, { timeout: 8000 }).catch(() => {});
-    if (await liveOn()) return;
+  // not the 12-minute snapshot step). The site's own poll (real feed, or the {} stub once data.json has loaded)
+  // keeps that state by itself; give it a moment to answer. Otherwise mark the feed as answered and repaint,
+  // exactly as the site does on a reply (recorded as net.liveForced).
+  // A feed reply repaints only the hero stats; the app status bar picks the ⚡ state up on the site's own 30 s
+  // repaint tick (setInterval -> renderStatus). Run that same repaint now instead of waiting up to 30 s.
+  const repaint = () => page.evaluate(() => { try { if (S.st && S.st.kind === 'ok') renderStatus(); } catch (e) {} });
+  let s = await liveSt();
+  if (s.on && !s.forced) return repaint();
+  if (!s.on && (NET.live || NET.liveStub) && DATA_ON) {
+    await page.waitForFunction(() => { try { return liveIsOn(); } catch (e) { return false; } }, null, { timeout: 8000, polling: 200 }).catch(() => {});
+    s = await liveSt();
+    if (s.on && !s.forced) return repaint();
   }
   if (!LIVE_FORCE) return;
   await page.evaluate(() => { try { window.__capLiveAt = liveOkAt = Date.now(); paintHeroStats(); if (S.st && S.st.kind === 'ok') renderStatus(); } catch (e) {} });
 }
 async function netInfo() {
-  const lv = await page.evaluate(() => { try { return { on: liveIsOn(), forced: !!window.__capLiveAt && liveOkAt === window.__capLiveAt }; } catch (e) { return { on: false, forced: false }; } });
+  const lv = await liveSt();
   return {
     data: !!NET.data, api: !!NET.api, live: !!NET.live, icons: !!NET.icons, kill: !!NET.kill,
     liveOn: lv.on, liveForced: lv.on && lv.forced,
@@ -287,8 +293,9 @@ function saveManifest() {
   }
   if (mine.net) d.net = mine.net;
   for (const g of new Set([...completedGroups, ...Object.keys(groupFail)])) {
-    if (!ranGroups.has(g)) {   // a static group (home/lang/skin/sections) that failed
-      if (groupFail[g]) d.pending[g] = [{ state: '(rest of group)', reason: 'error: ' + groupFail[g].error, failedAfter: groupFail[g].failedAfter }];
+    if (!ranGroups.has(g)) {   // a static group (home/lang/skin/sections): only a failure is recorded
+      if (groupFail[g]) d.pending[g] = [{ state: '(rest of group)', reason: 'error: ' + groupFail[g].error }];
+      else delete d.pending[g];
       continue;
     }
     const seq = (mine.sequences[g] || []).slice();
@@ -372,7 +379,7 @@ async function waitI18n(ms = 1500) {
   await page.waitForFunction(() => {
     try { if (typeof UI === 'undefined' || UI === 'ru') return true; } catch (e) { return true; }
     const s = document.getElementById('status');
-    return !s || !/[Ѐ-ӿ]/.test(s.innerText);
+    return !s || !/[\u0400-\u04FF]/.test(s.innerText);
   }, null, { timeout: ms, polling: 50 }).catch(() => {});
 }
 const ROWS = '#tableWrap > table > tbody > tr.row';
@@ -433,7 +440,7 @@ const SNAPSHOT_LOADING = 'Загружаю готовый снимок цен…
 // What the page shows right after the screenshot: the site's S.st status, item icons and untranslated words
 // inside the saved strip [0, h].
 async function postShot(h) {
-  return page.evaluate(([h, SNAPSHOT_LOADING]) => {
+  return page.evaluate(async ([h, SNAPSHOT_LOADING]) => {
     const vw = innerWidth;
     const inStrip = b => b.width > 0 && b.height > 0 && b.bottom + scrollY > 0 && b.top + scrollY < h && b.right + scrollX > 0 && b.left + scrollX < vw;
     let site = null;
@@ -444,21 +451,30 @@ async function postShot(h) {
     const imgs = [...document.querySelectorAll('img[data-ico]')].filter(i => i.offsetParent !== null && inStrip(i.getBoundingClientRect()));
     const blank = imgs.filter(i => !i.getAttribute('src') || !i.complete || !i.naturalWidth || i.classList.contains('icoFail'));
     const broken = blank.filter(i => i.getAttribute('src') && i.complete && !i.naturalWidth);
-    const words = {};
-    if (site && site.ui && site.ui !== 'ru') {
+    // Cyrillic words in a non-Russian UI: read at three successive animation frames and keep only words seen in all
+    // three, so a line caught between a repaint and the site's translation pass (one frame) does not count
+    const scan = () => {
+      const words = {};
       const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       let n;
       while ((n = w.nextNode())) {
         const t = n.nodeValue;
-        if (!/[Ѐ-ӿ]/.test(t)) continue;
+        if (!/[\u0400-\u04FF]/.test(t)) continue;
         const el = n.parentElement;
         if (!el || el.closest('script,style,noscript,template,option,[hidden]')) continue;
         const cs = getComputedStyle(el);
         if (cs.visibility === 'hidden' || +cs.opacity === 0) continue;
         const r = document.createRange(); r.selectNodeContents(n);
         if (!inStrip(r.getBoundingClientRect())) continue;
-        for (const m of t.match(/[Ѐ-ӿ][Ѐ-ӿ-]*/g) || []) if (m !== 'Русский') words[m] = (words[m] || 0) + 1;
+        for (const m of t.match(/[\u0400-\u04FF][\u0400-\u04FF-]*/g) || []) if (m !== 'Русский') words[m] = (words[m] || 0) + 1;
       }
+      return words;
+    };
+    let words = {};
+    if (site && site.ui && site.ui !== 'ru') {
+      const frame = () => new Promise(r => requestAnimationFrame(() => r(scan())));
+      const a = await frame(), b = await frame(), c = await frame();
+      for (const k of Object.keys(a)) if (b[k] && c[k]) words[k] = a[k];
     }
     // only counts when the fallback is visible in the saved strip: the app status bar, the table skeleton note, or the
     // home page's status line (which says "loading in the background" instead of "prices ready")
@@ -482,14 +498,16 @@ function where(r, vw, h) {
 // the shots; if they moved in between, the shots are retaken (up to 3 times) and the keys that kept moving are
 // listed in labelDrift.
 async function snap(group, name, o = {}) {
-  if (!NET.live || !(await liveOn())) await liveMode();
+  await liveMode();
   await settle(o.settle ?? 250);
   await waitI18n();
   const getItems = async () => (typeof o.items === 'function' ? await o.items() : o.items);
   const f = path.join(OUT, name + '.png');
   let m, items, info, vp, pre, drift = [];
+  let m1;
   for (let shot = 1; ; shot++) {
-    const m1 = await measure(o.map || {});
+    if (shot > 1) await waitI18n();
+    m1 = await measure(o.map || {});
     const items1 = await getItems();
     info = await page.evaluate((inc) => {
       let bottom = 0;
@@ -514,6 +532,13 @@ async function snap(group, name, o = {}) {
     await settle(150);
   }
   const post = await postShot(info.h);
+  // The site translates new text in a requestAnimationFrame callback, i.e. before that frame is painted, so the
+  // pixels never show the Russian source text; a label read in between (Russian) is replaced by the translated
+  // reading taken just before the shot.
+  if (post.site && post.site.ui && post.site.ui !== 'ru') {
+    const cyr = a => (a || []).some(x => /[\u0400-\u04FF]/.test(x));
+    for (const k of drift) if (m.labels[k] && cyr(m.labels[k]) && !cyr(m1.labels[k])) { m.labels[k] = m1.labels[k]; m.rects[k] = m1.rects[k]; m.keys[k] = m1.keys[k]; }
+  }
   const st = {
     img: rel(f), page: [info.vw, info.h, info.sx, info.sy], fullPage: true, pageSize: [info.pw, info.ph], vp,
     group, step: o.step || '', rects: m.rects, labels: m.labels, keys: m.keys,

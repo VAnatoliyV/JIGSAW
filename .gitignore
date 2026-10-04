@@ -9,3 +9,4 @@ out/chunks/
 __pycache__/
 out/test_*
 out/*.tmp*
+film/devcap/
