@@ -7,3 +7,5 @@ out/frames/
 out/chunks/
 *.pyc
 __pycache__/
+out/test_*
+out/*.tmp*
