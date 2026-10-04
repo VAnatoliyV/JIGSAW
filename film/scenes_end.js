@@ -1,16 +1,17 @@
 // ENDING (88–120 s): the night city breathes ("the market never sleeps") → an odometer counts the base
-// on the accelerating ticks → 6,985 lands → the number docks into the REAL stat tile, the real "⚡ seconds"
-// tile is struck by lightning → "UPDATED IN SECONDS" → everything implodes into a core → the real anvil is
-// struck on the final chorus with the real wordmark → stamped "STOP GUESSING. / START CRAFTING." → CTA with
-// the real button / chips crops, the URL types on the key clicks, a cursor clicks "Open Crafting →" →
-// final hit, final lockup with the real footer, fade to black.
+// on the accelerating ticks → "6 985" lands and holds while the VO reads it (lightning crackles across it on
+// the 98.0 zap) → the number docks, registered, into the REAL stat tile, the real "⚡ seconds" tile is born in
+// a lightning strike → "UPDATED IN SECONDS" → everything implodes into the anvil's strike point → the real
+// anvil is struck on the final chorus with the real wordmark → "STOP GUESSING. / START CRAFTING." stamped on
+// the voiced words → CTA with the real button / chips crops, the URL types on the key clicks, a cursor clicks
+// "Open Crafting →" → final hit, final lockup with the real footer, fade to black.
 (function () {
-  const { W, H, U, E, K, seg, spring, clamp, lerp, hash, noise1, el, tf, show, scene, P, L, S, motionBlur, evs } = FX;
+  const { W, H, U, E, K, seg, spring, clamp, lerp, hash, noise1, el, tf, show, scene, P, L, S, motionBlur, evs, TL, PROFILE } = FX;
   const { Anvil, Cursor, cursorPath, stateInfo } = FX.lib;
   const HOME = stateInfo('home') || { pieces: {} };
   const piece = (k, i = 0) => ((HOME.pieces || {})[k] || [])[i];
   const CX = W / 2, CY = H / 2, TAU = Math.PI * 2;
-  const NUM_TXT = '6,985', FINAL_N = 6985;
+  const FINAL_N = 6985;
   const URL_TXT = 'vanatoliyv.github.io/albion-craft-profit', URL_HOST = 21;   // 'vanatoliyv.github.io/'
   const URL_CHUNKS = ['van', 'atol', 'iyv', '.git', 'hub', '.io', '/alb', 'ion-', 'cra', 'ft-', 'pro', 'fit'];
 
@@ -59,6 +60,26 @@
   }
   const sweep = (sh, t, t0, d = 0.6) => { if (!sh) return; const p = seg(t, t0, t0 + d, E.ioQ); sh.style.opacity = p > 0 && p < 1 ? 1 : 0; sh.style.backgroundPosition = `${(100 - 100 * p).toFixed(1)}% 0`; };
 
+  // ---------------- shared lockup geometry (the implosion of end_metric collapses into the anvil's strike point) ----------------
+  const ANV_K = P ? 12 : 8, AH = 36 * ANV_K;               // real anvil: 44x36 body, drawn at ANV_K screen px per logo px
+  const TP = piece('title');
+  const kTitle = (W * (P ? 0.84 : S ? 0.62 : 0.36)) / (TP ? TP.rect[2] : 320), TITLE_H = (TP ? TP.rect[3] : 66) * kTitle;
+  const LOCK = (() => { const ys = stack([{ h: AH, gap: 0 }, { h: TITLE_H, gap: (P ? 84 : 58) * U }], H * (P ? 0.46 : 0.5));
+    return { anv: { x: CX, y: ys[0], s: 1, o: 1 }, title: { x: CX, y: ys[1], s: 1, o: 1 } }; })();
+  const strikePt = st => [st.x + (AJLogo.HIT_X + 0.5 - 22) * ANV_K * st.s, st.y + (AJLogo.ANVIL_TOP - 40) * ANV_K * st.s];
+  const SP104 = strikePt(LOCK.anv);
+
+  // ---------------- stamp timing: on the words as voiced ----------------
+  // VO v18 "Stop guessing." starts at its line time, "Start crafting." ~1.03 s later (measured on the VO stem).
+  // If the timeline's stamp hits sit on those words (VO moved to ~105.9, or the stamp SFX moved to the words),
+  // the stamps take the exact hit times; otherwise they follow the voice and the stamp hits get accents.
+  const V18 = ((TL.vo || []).find(v => v.id === 'v18') || { t: 104.6 }).t;
+  const STE = evs('stamp').map(e => e.t).filter(x => x > 100 && x < 110);   // this stretch only (the hook has stamps too)
+  const pickT = (ev, voice) => (ev != null && Math.abs(ev - voice) < 0.45 ? ev : voice);
+  const TS1 = pickT(STE[0], V18 + 0.02), TS2 = pickT(STE[1], V18 + 1.03);
+  const ACC = STE.filter(x => Math.abs(x - TS1) > 0.05 && Math.abs(x - TS2) > 0.05);
+  const UL_T = ACC.length ? ACC[0] : TS2 + 0.3, SH_T = ACC.length > 1 ? ACC[1] : TS2 + 0.6;
+
   // heartbeat: timpani + bass drum of the breakdown (audio-src/music/score.py, bars 45-48)
   const HB = [];
   for (const b of [88, 90, 92]) HB.push([b, 1], [b + 0.25, 0.68], [b + 1, 0.94], [b + 1.25, 0.62]);
@@ -103,9 +124,13 @@
   // =====================================================================================
   scene('end_night', 88.0, 96.0, (Lr) => {
     el('div', 'fill', Lr, { background: '#04060b' });
+    // 9:16: night sky above the plate (the type lives there)
+    if (P) el('div', 'fill', Lr, { background: 'linear-gradient(180deg, #070b17 0%, #0a1122 26%, #070a14 40%, #04060b 100%)' });
     const IW = 2200, IH = 620;
-    const c0 = Math.max(W / IW, H / IH) * 1.06;
-    const mkImg = (filter, blend) => { const im = el('img', 'abs', Lr, { left: '0px', top: '0px', width: IW + 'px', height: IH + 'px', transformOrigin: '0 0', filter, mixBlendMode: blend || 'normal' }); im.src = '../assets/cities/caerleon-hero.webp'; return im; };
+    // 9:16 shows the wide plate as a band at ~1.9x (filling 1920 px of height would upscale it 3.5x+)
+    const c0 = P ? H * 0.6 / IH : Math.max(W / IW, H / IH) * 1.06, bandCY = H * 0.655;
+    const pmask = P ? 'linear-gradient(180deg, rgba(0,0,0,0) 0%, #000 17%, #000 70%, rgba(0,0,0,0) 100%)' : 'none';
+    const mkImg = (filter, blend) => { const im = el('img', 'abs', Lr, { left: '0px', top: '0px', width: IW + 'px', height: IH + 'px', transformOrigin: '0 0', filter, mixBlendMode: blend || 'normal', WebkitMaskImage: pmask, maskImage: pmask }); im.src = '../assets/cities/caerleon-hero.webp'; return im; };
     const city = mkImg('saturate(.62) brightness(1.18) contrast(1.06)');
     const tint = el('div', 'fill', Lr, { background: 'linear-gradient(180deg, rgba(160,184,240,1) 0%, rgba(132,156,226,1) 50%, rgba(84,100,170,1) 100%)', mixBlendMode: 'multiply' });
     // torches and windows keep their warm glow: a hard-contrast copy screened on top
@@ -116,14 +141,14 @@
     const floor = el('div', 'fill', Lr, { background: 'linear-gradient(0deg, rgba(6,9,18,.92) 0%, rgba(6,9,18,0) 38%), linear-gradient(180deg, rgba(6,9,18,.7) 0%, rgba(6,9,18,0) 22%)' });
     const shade = el('div', 'fill', Lr, { background: '#03050a', opacity: 0 });
     const pulse = el('div', 'fill', Lr, { background: `radial-gradient(${P ? '75% 34%' : '55% 48%'} at 50% 50%, rgba(238,150,70,.34) 0%, rgba(238,120,60,.10) 45%, rgba(0,0,0,0) 75%)`, mixBlendMode: 'screen', opacity: 0 });
-    const textBed = el('div', 'fill', Lr, { background: `radial-gradient(${P ? '62% 20%' : '46% 32%'} at 50% ${P ? 33 : 45}%, rgba(3,5,10,.62) 0%, rgba(3,5,10,0) 100%)` });
+    const textBed = el('div', 'fill', Lr, { background: `radial-gradient(${P ? '62% 16%' : '46% 32%'} at 50% ${P ? 25 : 45}%, rgba(3,5,10,.62) 0%, rgba(3,5,10,0) 100%)` });
     const cold = el('div', 'fill', Lr, { background: 'rgba(190,212,255,1)', mixBlendMode: 'screen', opacity: 0 });
     // drifting moonlit motes
     const cv = el('canvas', 'fill', Lr); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
 
     // ---- kinetic type ----
     const block = anchor(Lr, 10);
-    const maxW = W * (L ? 0.66 : P ? 0.86 : 0.82), maxS = (P ? 200 : S ? 160 : 180) * U;
+    const maxW = W * (L ? 0.66 : 0.78), maxS = (P ? 200 : S ? 160 : 180) * U;   // x1.08 of heartbeat + push stays inside 6%
     const sz = Math.min(fitDom(Lr, 'THE MARKET', 'px', {}, maxW, maxS), fitDom(Lr, 'NEVER SLEEPS', 'px', {}, maxW, maxS));
     const gapL = sz * 0.16;
     const WORDS = [
@@ -145,19 +170,21 @@
     }
     const andT = textA(block, 'AND', (P ? 36 : 40) * U, 'inter', { fontWeight: 700, letterSpacing: '.7em', paddingLeft: '.7em', color: '#eebc4e' });
     tf(andT.a, { y: -(sz + gapL / 2) - 0.36 * sz });
-    const BY = H * (P ? 0.33 : 0.45);
+    const BY = H * (P ? 0.25 : 0.45);
 
     return (t) => {
       const dt0 = t - 88;
       // city: hard cut on the impact, settle, slow push-in, suck-in on the reverse cymbal
       const z = 1 + 0.12 * seg(t, 88, 96, E.ioQ) + 0.08 * Math.exp(-dt0 / 0.2) + 0.45 * seg(t, 95.45, 96.0, E.inE);
-      const cs = c0 * z, fx = P ? 0.53 : 0.5, fy = 0.5;
-      const tx = clamp(CX - fx * IW * cs - dt0 * 5 * U, W - IW * cs, 0), ty = clamp(CY - fy * IH * cs, H - IH * cs, 0);
+      const cs = c0 * z;
+      // 9:16: slow lateral pan along the band (bridge brazier -> stairs); else a gentle drift
+      const tx = P ? clamp(CX - (0.5 + 0.06 * seg(t, 88, 96, E.ioQ)) * IW * cs, W - IW * cs, 0) : clamp(CX - 0.5 * IW * cs - dt0 * 5 * U, W - IW * cs, 0);
+      const ty = P ? bandCY - 0.5 * IH * cs : clamp(CY - 0.5 * IH * cs, H - IH * cs, 0);
       const tr = `translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) scale(${cs.toFixed(5)})`;
       city.style.transform = tr; lights.style.transform = tr;
       const hb = heart(t);
       lights.style.opacity = (0.5 + 0.12 * noise1(t * 7, 11) + 0.25 * hb).toFixed(3);
-      cold.style.opacity = (0.55 * Math.exp(-dt0 / 0.12)).toFixed(3);
+      cold.style.opacity = (0.32 * Math.exp(-dt0 / 0.08)).toFixed(3);
       shade.style.opacity = clamp(0.1 - 0.08 * hb + 0.42 * seg(t, 91.7, 92.3) + 0.4 * seg(t, 95.3, 96.0, E.inQ)).toFixed(3);
       pulse.style.opacity = (0.12 + 0.75 * hb).toFixed(3);
       fogs.forEach((f, i) => tf(f, { x: ((i % 2 ? -1 : 1) * (dt0 * (14 + 8 * i)) + 120 * Math.sin(i * 2.1)) * U, o: 0.75 + 0.25 * Math.sin(t * 0.7 + i) }));
@@ -180,9 +207,9 @@
         if (dt < 0) { w.e.style.opacity = 0; continue; }
         w.e.style.opacity = 1;
         if (w.fx === 'rise') w.chars.forEach((c, j) => { const a = spring(dt - j * 0.035, 3, 0.62); tf(c, { y: (1 - a) * 0.65 * sz, o: clamp(a * 1.6) }); });
-        if (w.fx === 'drop') w.chars.forEach((c, j) => { const a = spring(dt - j * 0.035, 3.2, 0.5); tf(c, { y: -(1 - a) * 0.8 * sz, r: (1 - a) * (j % 2 ? 9 : -9), o: clamp(a * 1.6) }); });
+        if (w.fx === 'drop') w.chars.forEach((c, j) => { const a = spring(dt - j * 0.035, 3.2, 0.5); tf(c, { y: -(1 - a) * 0.42 * sz, r: (1 - a) * (j % 2 ? 7 : -7), o: clamp(a * 1.6) }); });
         if (w.fx === 'slide') { const p = seg(dt, 0, 0.34, E.outE); tf(w.e, { x: -(1 - p) * W * 0.45, o: p, blur: (1 - p) * 16 }); }
-        if (w.fx === 'slam') { const p = seg(dt, 0, 0.24, E.outE); tf(w.e, { s: lerp(1.7, 1, p), o: clamp(dt / 0.05), blur: (1 - p) * 12, bright: 1 + 0.25 * hb }); }
+        if (w.fx === 'slam') { const p = seg(dt, 0, 0.24, E.outE); tf(w.e, { s: lerp(1.4, 1, p), o: clamp(dt / 0.05), blur: (1 - p) * 12, bright: 1 + 0.25 * hb }); }
       }
       const ap = seg(t, 88.6, 88.95, E.outC);
       andT.e.style.opacity = ap.toFixed(3);
@@ -228,34 +255,39 @@
       const T = textA(Lr, names[Math.floor(hash(i, 221) * names.length)].replace(/&/g, '&amp;'), (P ? 34 : 30) * U, 'inter', { fontWeight: 600, color: '#f5d47e', textShadow: '0 0 18px rgba(238,188,78,.7)' }, 3);
       const side = i % 2 ? 1 : -1;
       const x = CX + side * W * (0.18 + 0.14 * hash(i, 222)), y = H * (P ? (i % 4 < 2 ? 0.16 + 0.12 * hash(i, 223) : 0.68 + 0.14 * hash(i, 223)) : (i % 4 < 2 ? 0.12 + 0.12 * hash(i, 223) : 0.74 + 0.12 * hash(i, 223)));
-      return { T, t: tt, x: clamp(x, T.w / 2 + W * 0.05, W - T.w / 2 - W * 0.05), y };
+      return { T, t: tt, x: clamp(x, T.w / 2 + W * 0.06, W - T.w / 2 - W * 0.06), y };
     });
 
-    // ---------- the odometer ----------
-    // fixed-width digit columns: size the odometer from the widest digit
-    const pr = el('div', 'abs px', Lr, { fontSize: '100px', lineHeight: 1, visibility: 'hidden' });
-    let w100 = 0; for (const d of '0123456789') { pr.textContent = d; w100 = Math.max(w100, pr.offsetWidth); }
-    pr.textContent = ','; const c100 = pr.offsetWidth * 1.15;
-    const numSize = Math.min((P ? 330 : S ? 280 : 300) * U, W * (L ? 0.5 : P ? 0.76 : 0.68) * 100 / (4 * w100 + c100));
-    pr.style.fontSize = numSize + 'px';
-    let colW = 0; for (const d of '0123456789') { pr.textContent = d; colW = Math.max(colW, pr.offsetWidth); }
-    pr.textContent = ','; const commaW = pr.offsetWidth * 1.15; pr.textContent = '0'; const cellH = pr.offsetHeight; pr.remove();
-    const numW = colW * 4 + commaW;
+    // ---------- the odometer: Inter 800 tabular numerals, the site's "6 985" (space, no comma) ----------
+    const NUM_ST = { fontWeight: 800, fontVariantNumeric: 'tabular-nums' };
+    const pr = el('div', 'abs inter', Lr, Object.assign({ fontSize: '100px', lineHeight: 1, whiteSpace: 'pre', visibility: 'hidden' }, NUM_ST));
+    pr.textContent = '0'; const w100 = pr.offsetWidth; pr.textContent = ' '; const s100 = pr.offsetWidth; pr.remove();
+    const numSize = Math.min((P ? 300 : S ? 250 : 270) * U, W * (L ? 0.44 : P ? 0.74 : 0.64) * 100 / (4 * w100 + s100));
+    const colW = w100 * numSize / 100, spW = s100 * numSize / 100, cellH = Math.round(numSize);
+    const numW = colW * 4 + spW;
+    // digit ink metrics (for the registered dock into the real tile)
+    const mc = document.createElement('canvas').getContext('2d');
+    mc.font = `800 ${numSize}px Inter`;
+    const mD = ['0', '6', '9', '8'].map(c => mc.measureText(c));
+    const dA = Math.max(...mD.map(m => m.actualBoundingBoxAscent)), dD = Math.max(...mD.map(m => m.actualBoundingBoxDescent));
+    const inkH = dA + dD;
+    const fA = mD[0].fontBoundingBoxAscent, fD = mD[0].fontBoundingBoxDescent;
+    const inkDY = ((cellH - (fA + fD)) / 2 + fA) - (dA - dD) / 2 - cellH / 2;   // digit ink centre - cell centre
     const num = anchor(Lr, 8);
     const numBox = el('div', 'abs', num, { left: -numW / 2 + 'px', top: -cellH / 2 + 'px', width: numW + 'px', height: cellH + 'px' });
     const glowF = 'drop-shadow(0 0 34px rgba(238,188,78,.38)) drop-shadow(0 14px 30px rgba(0,0,0,.85))';
     numBox.style.filter = glowF;
-    const drum = 'linear-gradient(180deg, rgba(0,0,0,0) 0%, #000 11%, #000 89%, rgba(0,0,0,0) 100%)';
-    const cols = []; let comma = null, xx = 0;
+    const drum = 'linear-gradient(180deg, rgba(0,0,0,0) 0%, #000 12%, #000 88%, rgba(0,0,0,0) 100%)';
+    const cols = []; let xx = 0;
     for (const k of [3, -1, 2, 1, 0]) {
-      if (k < 0) { comma = el('div', 'abs px gold', numBox, { left: xx + 'px', top: '0px', width: commaW + 'px', height: cellH + 'px', fontSize: numSize + 'px', lineHeight: cellH + 'px', textAlign: 'center' }); comma.textContent = ','; xx += commaW; continue; }
+      if (k < 0) { xx += spW; continue; }
       const box = el('div', 'abs', numBox, { left: xx + 'px', top: '0px', width: colW + 'px', height: cellH + 'px', overflow: 'hidden', WebkitMaskImage: drum, maskImage: drum });
       const strip = el('div', 'abs', box, { left: '0px', top: '0px', width: colW + 'px' });
-      for (let d = 0; d < 11; d++) { const c = el('div', 'px gold', strip, { width: colW + 'px', height: cellH + 'px', fontSize: numSize + 'px', lineHeight: cellH + 'px', textAlign: 'center' }); c.textContent = String(d % 10); }
+      for (let d = 0; d < 11; d++) { const c = el('div', 'inter gold', strip, Object.assign({ width: colW + 'px', height: cellH + 'px', fontSize: numSize + 'px', lineHeight: cellH + 'px', textAlign: 'center' }, NUM_ST)); c.textContent = String(d % 10); }
       const mb = motionBlur(); strip.style.filter = mb.url;
       cols.push({ k, box, strip, mb }); xx += colW;
     }
-    // values on the 16 accelerating ticks, then 6,985 on the hit
+    // values on the 16 accelerating ticks, then 6 985 on the hit
     const STEPS = TICKS.map((tt, i) => ({ t: tt, v: Math.max(3 + i, Math.round(FINAL_N * Math.pow((i + 1) / (TICKS.length + 1), 1.75) + (hash(i, 231) - 0.5) * 70)) }));
     for (let i = 1; i < STEPS.length; i++) STEPS[i].v = Math.max(STEPS[i].v, STEPS[i - 1].v + 7);
     STEPS.push({ t: 96.0, v: FINAL_N, snap: true });
@@ -264,19 +296,32 @@
       if (i < 0) return { from: 0, to: 0, x: 1 };
       const st = STEPS[i], from = i ? STEPS[i - 1].v : 0, next = i + 1 < STEPS.length ? STEPS[i + 1].t : st.t + 1;
       const d = st.snap ? 0 : Math.min(0.14, 0.82 * (next - st.t));
-      return { from, to: st.v, x: d ? clamp((t - st.t) / d) : 1 };
+      return { from, to: st.v, d, x: d ? clamp((t - st.t) / d) : 1 };
     }
-    const colPos = (t, k) => { const r = roll(t); const n1 = Math.floor(r.to / 10 ** k), n0 = Math.max(Math.floor(r.from / 10 ** k), n1 - 9); return lerp(n0, n1, E.outB(r.x)); };
+    // column k of the odometer: position (in digits) and speed (digits/s) within the current roll
+    function colState(t, k) {
+      const r = roll(t), n1 = Math.floor(r.to / 10 ** k), n0 = Math.max(Math.floor(r.from / 10 ** k), n1 - 9);
+      const p = lerp(n0, n1, E.outB(r.x));
+      let vel = 0;
+      if (r.d > 0 && r.x < 1) { const a = Math.max(0, r.x - 0.03), b = Math.min(1, r.x + 0.03); vel = Math.abs((n1 - n0) * (E.outB(b) - E.outB(a)) / ((b - a) * r.d)); }
+      return { p, vel };
+    }
     const valueAt = t => { const r = roll(t); return lerp(r.from, r.to, E.outC(r.x)); };
     // label (the site's own wording) + gold hairline progress
-    const lblSize = (P ? 42 : S ? 34 : 36) * U;
-    const label = textA(Lr, 'ITEMS IN THE BASE', lblSize, 'inter', { fontWeight: 600, letterSpacing: '.34em', paddingLeft: '.34em', color: '#b7bfcf' }, 8);
+    const lblSize = (P ? 40 : S ? 32 : 34) * U, LS = 0.34;
+    const label = textA(Lr, 'ITEMS IN THE BASE', lblSize, 'inter', { fontWeight: 600, letterSpacing: LS + 'em', paddingLeft: LS + 'em', color: '#b7bfcf' }, 8);
+    mc.font = `600 ${lblSize}px Inter`;
+    const mI = mc.measureText('I'), lblCap = mI.actualBoundingBoxAscent;
+    const lblDY = ((label.h - (mI.fontBoundingBoxAscent + mI.fontBoundingBoxDescent)) / 2 + mI.fontBoundingBoxAscent) - lblCap / 2 - label.h / 2;
+    const lblInkW = label.w - 2 * LS * lblSize;
     const hair = anchor(Lr, 8);
     const hairBar = el('div', 'abs', hair, { left: -numW * 0.46 + 'px', top: -1.5 * U + 'px', width: numW * 0.92 + 'px', height: 3 * U + 'px', transformOrigin: '0 50%', background: 'linear-gradient(90deg, rgba(238,188,78,0), #f5d47e 15%, #eebc4e 85%, rgba(238,188,78,0))', boxShadow: '0 0 16px rgba(238,188,78,.7)' });
     const numY = H * (P ? 0.41 : 0.42);
-    const hairY = numY + cellH * 0.5 + 10 * U, lblY = hairY + 26 * U + label.h / 2;
-    const numSheen = el('div', 'abs', num, { left: -numW * 0.6 + 'px', top: -cellH * 0.6 + 'px', width: numW * 1.2 + 'px', height: cellH * 1.2 + 'px', opacity: 0, mixBlendMode: 'overlay',
-      background: 'linear-gradient(100deg, rgba(255,255,255,0) 42%, rgba(255,255,255,1) 50%, rgba(255,255,255,0) 58%)', backgroundSize: '300% 100%' });
+    const hairY = numY + inkDY + inkH / 2 + 30 * U, lblY = hairY + 26 * U + label.h / 2;
+    // 4-point glints on the landed number
+    const GL = [[0.47, -0.36, 96.55], [-0.43, 0.3, 96.95], [0.12, -0.4, 97.3], [-0.2, -0.38, 98.55], [0.4, 0.28, 99.0]];
+    const glints = GL.map(() => el('div', 'abs', num, { width: 110 * U + 'px', height: 110 * U + 'px', opacity: 0 },
+      `<svg viewBox="-10 -10 20 20" width="${110 * U}" height="${110 * U}"><path d="M0,-10 L1.3,-1.3 L10,0 L1.3,1.3 L0,10 L-1.3,1.3 L-10,0 L-1.3,-1.3 Z" fill="#fff8e6"/></svg>`));
     // shock rings
     const rings = [0, 1].map(i => { const a = anchor(Lr, 7); el('div', 'abs', a, { left: -320 * U + 'px', top: -320 * U + 'px', width: 640 * U + 'px', height: 640 * U + 'px', borderRadius: '50%', border: `${(i ? 4 : 9) * U}px solid rgba(255,232,180,.95)`, boxShadow: '0 0 50px rgba(238,188,78,.75), inset 0 0 40px rgba(238,188,78,.45)' }); return a; });
 
@@ -291,44 +336,56 @@
       : [[CX - tiles[1].w / 2 - gT - tiles[0].w / 2, CY], [CX, CY], [CX + tiles[1].w / 2 + gT + tiles[2].w / 2, CY]];
     const heroS = P ? 1.4 : S ? 1.6 : 1.45;
     const OUT = P ? [[CX, CY - H * 0.55], null, [CX, CY + H * 0.55]] : S ? [[CX - W * 0.75, TRIO[0][1]], null, [CX, CY + H * 0.62]] : [[CX - W * 0.6, CY], null, [CX + W * 0.6, CY]];
-    // kinetic "UPDATED / IN SECONDS" (VO 100.16 / 100.84)
-    const kMax = W * (L ? 0.62 : P ? 0.86 : 0.82), kS = Math.min(fitDom(Lr, 'IN SECONDS', 'px', {}, kMax, (P ? 190 : S ? 120 : 150) * U), fitDom(Lr, 'UPDATED', 'px', {}, kMax, (P ? 190 : S ? 120 : 150) * U));
+    // where "6 985" and "ITEMS IN THE BASE" sit inside the real tile crop (measured from the captures)
+    const INK = PROFILE === 'mobile' ? { n: [0.497, 0.343, 0.2], l: [0.498, 0.714, 0.114, 0.607] } : { n: [0.497, 0.357, 0.2], l: [0.497, 0.714, 0.114, 0.73] };
+    const T0 = tiles[0];
+    const sDock = INK.n[2] * T0.h / inkH;
+    const dockN = [TRIO[0][0] + (INK.n[0] - 0.5) * T0.w, TRIO[0][1] + (INK.n[1] - 0.5) * T0.h - inkDY * sDock];
+    const dockLs = [INK.l[3] * T0.w / lblInkW, INK.l[2] * T0.h / lblCap];
+    const dockL = [TRIO[0][0] + (INK.l[0] - 0.5) * T0.w, TRIO[0][1] + (INK.l[1] - 0.5) * T0.h - lblDY * dockLs[1]];
+    // timing (VO v17: "...eighty-five items" until 99.78, "Updated" 100.16, "in seconds" 100.84)
+    const DOCK0 = 99.28, DOCK1 = 99.6, XF = 99.6, T2IN = 99.68, STRIKE = 99.84, HERO0 = 99.98, HERO1 = 100.2;
+    // kinetic "UPDATED / IN SECONDS"
+    const kMax = W * (L ? 0.62 : 0.76), kS = Math.min(fitDom(Lr, 'IN SECONDS', 'px', {}, kMax, (P ? 190 : S ? 120 : 150) * U), fitDom(Lr, 'UPDATED', 'px', {}, kMax, (P ? 190 : S ? 120 : 150) * U));
     const UPD = textA(Lr, 'UPDATED', kS, 'px', { color: '#eef1f6', filter: 'drop-shadow(0 10px 26px rgba(0,0,0,.85))' }, 9);
     const INS = textA(Lr, 'IN SECONDS', kS, 'px gold', { filter: 'drop-shadow(0 10px 26px rgba(0,0,0,.85))' }, 9);
     const heroH = tiles[1].h * heroS, gK = (P ? 44 : 30) * U;
     const UPD_Y = CY - heroH / 2 - gK - UPD.h / 2, INS_Y = CY + heroH / 2 + gK + INS.h / 2;
-    const mbs = [motionBlur(), motionBlur()];
-    // lightning + streaks (canvas), implosion core
+    // lightning + streaks (canvas), implosion core at the anvil's strike point
     const lcv = el('canvas', 'fill', Lr, { zIndex: 10 }); lcv.width = W; lcv.height = H; const lc = lcv.getContext('2d');
     const core = anchor(Lr, 11);
     el('div', 'abs', core, { left: -400 * U + 'px', top: -400 * U + 'px', width: 800 * U + 'px', height: 800 * U + 'px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,252,240,1) 0%, rgba(255,232,170,.9) 14%, rgba(238,188,78,.45) 32%, rgba(238,188,78,.12) 50%, rgba(238,188,78,0) 70%)' });
+    const CP = SP104;
+    const ccen = t => { const p = E.inQ(seg(t, 103.0, 104.0)); return [lerp(CX, CP[0], p), lerp(CY, CP[1], p)]; };
 
     // bursts on the land
     FX.burst({ t: 96.0, x: CX, y: numY, n: 220, speed: 2300, angle: 0, spread: TAU, gravity: 1100, life: 1.15, size: 4, color: [255, 214, 140], streak: 0.03 });
     FX.burst({ t: 96.0, x: CX, y: numY, n: 80, speed: 1200, angle: 0, spread: TAU, gravity: 500, life: 0.6, size: 2.5, color: [255, 255, 255] });
     FX.burst({ t: 96.0, x: CX, y: numY, n: 26, speed: 1500, angle: -Math.PI / 2, spread: 2.4, gravity: 2600, life: 1.4, size: 8, color: [245, 200, 90], streak: 0.004 });   // pixel "coins"
-        // the zap: lightning strikes the real "⚡ seconds" tile
-    const tileTop1 = [TRIO[1][0], TRIO[1][1] - tiles[1].h / 2];
-    FX.burst({ t: 98.0, x: tileTop1[0], y: tileTop1[1], n: 90, speed: 1500, angle: -Math.PI / 2, spread: 2.8, gravity: 1800, life: 0.8, size: 3, color: [200, 225, 255], streak: 0.03 });
+    // the 98.0 zap crackles across the number itself
+    const numTop = numY + inkDY - inkH * 0.55;
+    FX.burst({ t: 98.0, x: CX, y: numTop, n: 90, speed: 1500, angle: -Math.PI / 2, spread: 2.8, gravity: 1800, life: 0.8, size: 3, color: [200, 225, 255], streak: 0.03 });
     FX.flash(98.0, 0.22, 0.05);
-    FX.burst({ t: 98.5, x: TRIO[2][0], y: TRIO[2][1], n: 40, speed: 900, angle: 0, spread: TAU, gravity: 600, life: 0.6, size: 2.5, color: [255, 220, 150] });
+    // the "⚡ seconds" tile is born in a strike, just before "Updated"
+    const tileTop1 = [TRIO[1][0], TRIO[1][1] - tiles[1].h / 2];
+    FX.burst({ t: STRIKE, x: tileTop1[0], y: tileTop1[1], n: 70, speed: 1300, angle: -Math.PI / 2, spread: 2.8, gravity: 1800, life: 0.7, size: 3, color: [200, 225, 255], streak: 0.03 });
+    FX.flash(STRIKE, 0.12, 0.04);
+    FX.burst({ t: T2IN, x: TRIO[2][0], y: TRIO[2][1], n: 30, speed: 800, angle: 0, spread: TAU, gravity: 600, life: 0.5, size: 2.5, color: [255, 220, 150] });
 
     // tile state over time (screen px): {x, y, s, o}
     function tileState(i, t) {
       const [tx, ty] = TRIO[i];
-      let st = { x: tx, y: ty, s: 1, o: 0 };
-      if (i === 0) st.o = seg(t, 97.82, 97.98);
-      if (i === 1) { const a = spring(t - 98.0, 3.1, 0.42); st.s = t >= 98 ? 1.35 - 0.35 * a : 0; st.o = t >= 98 ? 1 : 0; }
-      if (i === 2) { const a = spring(t - 98.5, 3, 0.5); st.y += (1 - a) * 70 * U; st.s = 0.8 + 0.2 * a; st.o = t >= 98.5 ? clamp(a * 2) : 0; }
-      // idle float
-      st.y += Math.sin((t - 98) * 2.2 + i * 1.7) * 4 * U * seg(t, 98.6, 99.2);
+      const st = { x: tx, y: ty, s: 1, o: 0 };
+      if (i === 0) st.o = t >= XF + 0.03 ? 1 : 0;   // hard swap: the kinetic number is registered on the tile's own
+      if (i === 1) { const a = spring(t - STRIKE, 3.1, 0.42); st.s = t >= STRIKE ? 1.35 - 0.35 * a : 0; st.o = t >= STRIKE ? 1 : 0; }
+      if (i === 2) { const a = spring(t - T2IN, 3, 0.5); st.y += (1 - a) * 60 * U; st.s = 0.8 + 0.2 * a; st.o = t >= T2IN ? clamp(a * 2) : 0; }
       // hero: the "⚡ seconds" tile takes the stage, the others leave
-      const hp = seg(t, 100.0, 100.32, E.ioC);
+      const hp = seg(t, HERO0, HERO1, E.ioC);
       if (i === 1) { st.s *= lerp(1, heroS, hp); st.x = lerp(st.x, CX, hp); st.y = lerp(st.y, CY, hp); }
-      else { const op = seg(t, 100.0, 100.36, E.inC); st.x = lerp(st.x, OUT[i][0], op); st.y = lerp(st.y, OUT[i][1], op); st.o *= 1 - op; }
+      else { const op = seg(t, HERO0 - 0.04, HERO1 - 0.04, E.inC); st.x = lerp(st.x, OUT[i][0], op); st.y = lerp(st.y, OUT[i][1], op); st.o *= 1 - op; }
       return st;
     }
-    // the whole hero cluster gathers and implodes on the reverse cymbal
+    // the whole hero cluster gathers, then implodes into the strike point on the reverse cymbal
     const clusterS = t => (1 + 0.1 * seg(t, 101.6, 103.0, E.ioQ)) * (1 - 0.35 * E.inQ(seg(t, 103.0, 104.0)) - 0.65 * E.inE(seg(t, 103.0, 104.0)));
     const jit = (t, k) => noise1(t * 28, k) * (2 + 7 * seg(t, 101.6, 103.6)) * U * seg(t, 101.5, 101.8);
 
@@ -355,89 +412,109 @@
       // ----- odometer -----
       const v = valueAt(t);
       for (const c of cols) {
-        const p = colPos(t, c.k), h = 0.004;
+        const { p, vel } = colState(t, c.k);
         const q = ((p % 10) + 10) % 10;
         c.strip.style.transform = `translate3d(0,${(-q * cellH).toFixed(2)}px,0)`;
-        const vel = Math.abs(colPos(t + h, c.k) - colPos(t - h, c.k)) / (2 * h);
-        c.mb.set(0, Math.min(cellH * 0.11, vel * cellH / 30 * 0.25));
+        c.mb.set(0, Math.min(cellH * 0.045, vel * cellH / 30 * 0.12));
         const lit = c.k === 0 ? 1 : clamp(p);
         c.box.style.opacity = (0.11 + 0.89 * lit).toFixed(3);
-        if (c.k === 3) comma.style.opacity = (0.11 + 0.89 * lit).toFixed(3);
       }
-      // group motion: appear from depth, grow with the riser, inhale on the reverse, SLAM on the hit
+      // group motion: appear from depth, grow with the riser, inhale on the reverse, SLAM on the hit, hold under the VO
       const app = spring(t - 91.82, 2.4, 0.6);
       let s = (0.62 + 0.2 * app) + 0.16 * seg(t, 92.0, 95.5, E.ioQ);
       s *= (1 - 0.07 * seg(t, 95.5, 96.0, E.inQ)) * (1 + 0.025 * heart(t));
       let bright = 1;
-      if (land) { const d = t - 96; s = (1 + 0.16 * (1 - spring(d, 3.0, 0.42))) * (1 + 0.035 * seg(t, 96.3, 97.5, E.ioQ)); bright = 1 + 1.4 * Math.exp(-d / 0.1); }
-      const rj = seg(t, 94.0, 96.0, E.inQ) * (land ? 0 : 1);
+      if (land) { const d = t - 96; s = (1 + 0.16 * (1 - spring(d, 3.0, 0.42))) * (1 + 0.05 * seg(t, 96.3, 99.2, E.ioQ)); bright = 1 + 1.4 * Math.exp(-d / 0.1); }
+      // 98.0 zap: lightning crackles across the number (flash, blue rim, jolt)
+      const zd = t - 98.0, zap = zd >= 0 ? Math.exp(-zd / 0.18) : 0;
+      if (zd >= 0) bright += 0.9 * Math.exp(-zd / 0.06);
+      const rj = seg(t, 94.0, 96.0, E.inQ) * (land ? 0 : 1) + (zd >= 0 && zd < 0.3 ? 1.6 * (1 - zd / 0.3) : 0);
       let nx = CX + noise1(t * 30, 31) * 6 * U * rj, ny = numY + noise1(t * 30, 32) * 6 * U * rj;
       let no = t < 91.82 ? 0 : clamp(app * 2);
-      // dock into the real tile (97.55 -> 98.0)
-      const T0 = tiles[0], dock = seg(t, 97.55, 98.0, E.ioC);
-      const tScale = (0.23 * T0.h) / (0.62 * numSize);
-      if (dock > 0) {
-        nx = lerp(nx, TRIO[0][0], dock); ny = lerp(ny, TRIO[0][1] - 0.115 * T0.h, dock);
-        s = lerp(s, tScale, dock); no *= 1 - seg(t, 97.8, 97.97);
-      }
+      // dock, registered on the real tile's own "6 985", then a clean swap
+      const dock = seg(t, DOCK0, DOCK1, E.ioC);
+      if (dock > 0) { nx = lerp(nx, dockN[0], dock); ny = lerp(ny, dockN[1], dock); s = lerp(s, sDock, dock); if (t >= XF + 0.03) no = 0; }
       tf(num, { x: nx, y: ny, s, o: no });
-      numBox.style.filter = bright > 1.01 ? `brightness(${bright.toFixed(3)}) ${glowF}` : glowF;
-      const shp = seg(t, 96.45, 97.1, E.ioQ);
-      numSheen.style.opacity = shp > 0 && shp < 1 ? 0.9 : 0; numSheen.style.backgroundPosition = `${(100 - 100 * shp).toFixed(1)}% 0`;
+      const blue = zap > 0.01 ? ` drop-shadow(0 0 ${(26 * U).toFixed(1)}px rgba(120,180,255,${(0.9 * zap).toFixed(3)}))` : '';
+      numBox.style.filter = (bright > 1.01 ? `brightness(${bright.toFixed(3)}) ` : '') + glowF + blue;
+      glints.forEach((g, i) => { const [gx, gy, t0] = GL[i], p = seg(t, t0, t0 + 0.45); g.style.left = (gx * numW - 55 * U) + 'px'; g.style.top = (gy * cellH - 55 * U) + 'px'; tf(g, { s: Math.sin(p * Math.PI) * 1.1, r: p * 120, o: p > 0 && p < 1 && t < DOCK0 ? 1 : 0 }); });
       // hairline: progress of the count, then the underline of the label
       const prog = land ? 1 : v / FINAL_N;
-      const lblScale = lerp(1, (0.135 * T0.h) / (0.72 * lblSize), dock);
-      tf(hair, { x: lerp(CX, TRIO[0][0], dock), y: lerp(hairY, TRIO[0][1] + 0.08 * T0.h, dock), sx: prog, s: lerp(1, tScale, dock), o: (t < 91.85 ? 0 : 0.9) * (1 - seg(t, 97.7, 97.9)) });
+      tf(hair, { x: nx, y: lerp(hairY, dockN[1], dock), sx: prog, s: lerp(1, sDock, dock), o: (t < 91.85 ? 0 : 0.9) * (1 - seg(t, DOCK0, DOCK0 + 0.15)) });
       const lp = seg(t, 96.22, 96.6, E.outC);
       label.e.style.clipPath = `inset(0 ${(50 - 50 * lp).toFixed(1)}% 0 ${(50 - 50 * lp).toFixed(1)}%)`;
-      tf(label.a, { x: lerp(CX, TRIO[0][0], dock), y: lerp(lblY, TRIO[0][1] + 0.235 * T0.h, dock), s: lblScale, o: (lp > 0 ? 1 : 0) * (1 - seg(t, 97.8, 97.97)) });
+      tf(label.a, { x: lerp(CX, dockL[0], dock), y: lerp(lblY, dockL[1], dock), sx: lerp(1, dockLs[0], dock), sy: lerp(1, dockLs[1], dock), o: (lp > 0 ? 1 : 0) * (t >= XF + 0.03 ? 0 : 1) });
       rings.forEach((r, i) => { const d = t - 96 - i * 0.07; const p = seg(d, 0, 0.6, E.outC); tf(r, { x: CX, y: numY, s: 0.15 + 2.2 * p, o: d >= 0 ? (1 - p) * 0.95 : 0 }); });
 
       // ----- tiles -----
-      const cl = clusterS(t);
+      const cl = clusterS(t), cc = ccen(t);
       const rects = [];
       tiles.forEach((T, i) => {
         const st = tileState(i, t);
         let x = st.x, y = st.y, sc = st.s;
-        if (i === 1) { x = CX + (x - CX) * cl + jit(t, 41); y = CY + (y - CY) * cl + jit(t, 42); sc *= cl; }
+        if (i === 1) { x = cc[0] + (x - CX) * cl + jit(t, 41); y = cc[1] + (y - CY) * cl + jit(t, 42); sc *= cl; }
         let bright = 1, filt = '';
-        if (i === 1 && t >= 98) { const d = t - 98; bright = 1 + 1.6 * Math.exp(-d / 0.14) + 0.5 * Math.exp(-Math.max(0, t - 100.16) / 0.12) * (t >= 100.16 ? 1 : 0) + 0.5 * (t >= 100.84 ? Math.exp(-(t - 100.84) / 0.12) : 0); filt = `drop-shadow(0 0 ${(30 * U).toFixed(1)}px rgba(106,165,224,${(0.25 + 0.55 * Math.exp(-d / 0.3)).toFixed(3)}))`; }
-        tf(T.a, { x, y, s: sc, o: st.o * (t > 103.92 ? 1 - seg(t, 103.92, 104.0) : 1), bright, filter: filt });
+        if (i === 0 && t >= XF + 0.03) bright = 1 + 0.55 * Math.exp(-(t - XF - 0.03) / 0.1);
+        if (i === 1 && t >= STRIKE) { const d = t - STRIKE; bright = 1 + 1.6 * Math.exp(-d / 0.14) + 0.5 * Math.exp(-Math.max(0, t - 100.16) / 0.12) * (t >= 100.16 ? 1 : 0) + 0.5 * (t >= 100.84 ? Math.exp(-(t - 100.84) / 0.12) : 0); filt = `drop-shadow(0 0 ${(30 * U).toFixed(1)}px rgba(106,165,224,${(0.25 + 0.55 * Math.exp(-d / 0.3)).toFixed(3)}))`; }
+        tf(T.a, { x, y, s: sc, o: st.o * (1 - seg(t, 103.68, 103.84)), bright, filter: filt });
         rects.push([x, y, T.w * sc, T.h * sc, st.o]);
       });
-      sheens.forEach((sh, i) => sweep(sh, t, 99.0 + i * 0.12, 0.55));
+      sheens.forEach((sh, i) => sweep(sh, t, [XF + 0.06, STRIKE + 0.2, T2IN + 0.12][i], 0.5));
 
       // ----- kinetic UPDATED / IN SECONDS -----
       [[UPD, 100.16, UPD_Y, 0], [INS, 100.84, INS_Y, 1]].forEach(([T, t0, y0, j]) => {
         const d = t - t0, p = seg(d, 0, 0.2, E.outE);
         const sh = d >= 0 && d < 0.3 ? 1 : 0;
-        const x = CX + noise1(t * 40, 50 + j) * 10 * U * sh * (1 - d / 0.3) + jit(t, 43 + j), y = CY + (y0 - CY) * cl + jit(t, 45 + j);
+        const x = cc[0] + noise1(t * 40, 50 + j) * 10 * U * sh * (1 - d / 0.3) + jit(t, 43 + j), y = cc[1] + (y0 - CY) * cl + jit(t, 45 + j);
         const coll = seg(t, 103.0, 104.0);
-        tf(T.a, { x, y, s: lerp(1.55, 1, p) * cl, o: d >= 0 ? clamp(d / 0.04) * (1 - seg(t, 103.85, 104.0)) : 0, blur: (1 - p) * 10 + coll * 6, bright: 1 + (d >= 0 ? 1.2 * Math.exp(-d / 0.1) : 0) });
+        tf(T.a, { x, y, s: lerp(1.45, 1, p) * cl, o: d >= 0 ? clamp(d / 0.04) * (1 - seg(t, 103.66, 103.82)) : 0, blur: (1 - p) * 10 + coll * 6, bright: 1 + (d >= 0 ? 1.2 * Math.exp(-d / 0.1) : 0) });
       });
 
       // ----- lightning + streaks -----
       lc.clearRect(0, 0, W, H);
       lc.globalCompositeOperation = 'lighter';
       const fi = Math.floor(t * 30);
+      // 98.0: the zap - a strike from the sky into the number, arcs crawling over and across the digits
+      if (zd >= 0 && zd < 0.85) {
+        const nw = numW * s, nh = inkH * s, ncy = ny + inkDY * s;
+        const NR = [nx, ncy, nw * 1.04, nh * 1.18];
+        if (zd < 0.3) {
+          const vis = hash(fi, 61) > 0.25 || zd < 0.06;
+          const a = (1 - zd / 0.3) * (vis ? 1 : 0.15);
+          const pts = boltPts(nx + (hash(1, 63) - 0.5) * W * 0.25, -20 * U, nx + (hash(Math.floor(t * 12), 62) - 0.5) * nw * 0.4, ncy - nh * 0.55, Math.floor(t * 20), 0.36, 6);
+          strokeBolt(lc, pts, 4.5 * U, a);
+          for (let b = 0; b < 2; b++) { const m = pts[10 + b * 16] || pts[8]; strokeBolt(lc, boltPts(m[0], m[1], m[0] + (hash(b, 64) - 0.5) * 300 * U, m[1] + (90 + 120 * hash(b, 65)) * U, fi * 3 + b, 0.45, 4), 2 * U, a * 0.6); }
+        }
+        const arcA = 1 - seg(zd, 0, 0.85);
+        const nArc = 2 + Math.round(4 * arcA);
+        for (let b = 0; b < nArc; b++) {
+          const u0 = hash(fi * 7 + b, 66), u1 = u0 + 0.03 + 0.07 * hash(fi * 7 + b, 67);
+          const [ax, ay] = perim(NR, u0), [bx, by] = perim(NR, u1);
+          strokeBolt(lc, boltPts(ax, ay, bx, by, fi * 11 + b, 0.5, 4), 2.4 * U, arcA * (0.6 + 0.4 * hash(fi, b + 68)));
+        }
+        if (zd < 0.5 && hash(fi, 69) > 0.3) {   // a crackle jumping digit to digit
+          const k0 = Math.floor(hash(fi, 70) * 3), y0 = ncy + (hash(fi, 71) - 0.5) * nh * 0.6;
+          const x0 = nx - nw / 2 + (k0 + 0.5 + (k0 > 0 ? spW / colW : 0)) * colW * s, x1 = x0 + colW * s * (1.1 + 0.5 * hash(fi, 72));
+          strokeBolt(lc, boltPts(x0, y0, Math.min(x1, nx + nw / 2), y0 + (hash(fi, 73) - 0.5) * nh * 0.5, fi * 19, 0.5, 4), 2.2 * U, (1 - zd / 0.5));
+        }
+      }
       const r1 = rects[1];
       const R1 = [r1[0], r1[1], r1[2], r1[3]];
-      if (t >= 98.0 && t < 98.32) {   // the strike from the sky
-        const vis = hash(fi, 61) > 0.25 || t < 98.06;
-        const a = (1 - seg(t, 98.0, 98.32)) * (vis ? 1 : 0.15);
+      if (t >= STRIKE && t < STRIKE + 0.28) {   // the strike from the sky that makes the "⚡ seconds" tile
+        const vis = hash(fi, 61) > 0.25 || t < STRIKE + 0.06;
+        const a = (1 - seg(t, STRIKE, STRIKE + 0.28)) * (vis ? 1 : 0.15);
         const sx = r1[0] + (hash(Math.floor(t * 12), 62) - 0.5) * r1[2] * 0.3;
-        const pts = boltPts(sx + (hash(1, 63) - 0.5) * W * 0.2, -20 * U, r1[0], r1[1] - r1[3] / 2, Math.floor(t * 20), 0.36, 6);
-        strokeBolt(lc, pts, 4.5 * U, a);
-        for (let b = 0; b < 3; b++) { const m = pts[8 + b * 14] || pts[8]; const bp = boltPts(m[0], m[1], m[0] + (hash(b, 64) - 0.5) * 300 * U, m[1] + (90 + 120 * hash(b, 65)) * U, fi * 3 + b, 0.45, 4); strokeBolt(lc, bp, 2 * U, a * 0.7); }
+        const pts = boltPts(sx + (hash(2, 63) - 0.5) * W * 0.2, -20 * U, r1[0], r1[1] - r1[3] / 2, Math.floor(t * 20) + 7, 0.36, 6);
+        strokeBolt(lc, pts, 4 * U, a);
       }
       // arcs crawling on the "⚡ seconds" tile
       let arc = 0;
-      if (t >= 98.0) arc = Math.max(arc, 1 - seg(t, 98.0, 98.8));
+      if (t >= STRIKE) arc = Math.max(arc, 1 - seg(t, STRIKE, STRIKE + 0.7));
       if (t >= 100.16) arc = Math.max(arc, 0.9 * (1 - seg(t, 100.16, 100.6)));
       if (t >= 100.84) arc = Math.max(arc, 0.9 * (1 - seg(t, 100.84, 101.3)));
       if (t >= 100.3 && t < 103.0 && hash(fi, 71) > 0.55) arc = Math.max(arc, 0.4);
-      if (t >= 103.0 && t < 104.0) arc = Math.max(arc, 0.4 + 0.6 * seg(t, 103, 104));
-      if (arc > 0.02 && r1[4] > 0.05) {
+      if (t >= 103.0 && t < 103.7) arc = Math.max(arc, 0.4 + 0.5 * seg(t, 103, 103.7));
+      if (arc > 0.02 && r1[4] > 0.05 && t < 103.7) {
         const n = 2 + Math.round(3 * arc);
         for (let b = 0; b < n; b++) {
           const u0 = hash(fi * 7 + b, 72), u1 = u0 + 0.04 + 0.08 * hash(fi * 7 + b, 73);
@@ -451,13 +528,14 @@
         const a = (1 - d / 0.34) * (hash(fi, 80 + j) > 0.2 ? 1 : 0.2);
         for (let b = 0; b < 2; b++) {
           const sx = r1[0] + (hash(b + j * 5, 81) - 0.5) * r1[2] * 0.8, sy = r1[1] + (j ? 1 : -1) * r1[3] / 2;
-          const ex = CX + (hash(b + j * 5, 82) - 0.5) * T.w * 0.9 * cl, ey = CY + (y0 - CY) * cl + (j ? -1 : 1) * T.h * 0.4 * cl;
+          const ex = cc[0] + (hash(b + j * 5, 82) - 0.5) * T.w * 0.9 * cl, ey = cc[1] + (y0 - CY) * cl + (j ? -1 : 1) * T.h * 0.4 * cl;
           strokeBolt(lc, boltPts(sx, sy, ex, ey, fi * 13 + b + j * 50, 0.42, 5), 2.6 * U, a);
         }
       });
-      // streaks converging on the centre (rising energy), arcs into the core on the reverse
+      // streaks converging (rising energy) - their focus slides to the anvil's strike point for the implosion
       const en = seg(t, 100.4, 104.0, E.inQ);
       if (en > 0.01) {
+        const fp = seg(t, 102.4, 103.8, E.ioQ), fx0 = lerp(CX, CP[0], fp), fy0 = lerp(CY, CP[1], fp);
         const dtb = Math.max(0, t - 100.4);
         const phase = 0.25 * dtb + 2.6 * Math.pow(dtb, 3) / (3 * 3.6 * 3.6);
         const Rm = Math.hypot(W, H) * 0.6;
@@ -467,21 +545,21 @@
           const a = Math.sin(u * Math.PI) * en * (0.35 + 0.65 * hash(i, 95));
           const c = hash(i, 96) > 0.5 ? '255,226,160' : '255,250,235';
           lc.strokeStyle = `rgba(${c},${(a * 0.8).toFixed(3)})`; lc.lineWidth = (1.2 + 2.2 * hash(i, 97)) * U;
-          lc.beginPath(); lc.moveTo(CX + Math.cos(ang) * r, CY + Math.sin(ang) * r); lc.lineTo(CX + Math.cos(ang) * (r + len), CY + Math.sin(ang) * (r + len)); lc.stroke();
+          lc.beginPath(); lc.moveTo(fx0 + Math.cos(ang) * r, fy0 + Math.sin(ang) * r); lc.lineTo(fx0 + Math.cos(ang) * (r + len), fy0 + Math.sin(ang) * (r + len)); lc.stroke();
         }
       }
-      if (t >= 103.2 && t < 104.0) {
-        const a = seg(t, 103.2, 103.9);
+      if (t >= 103.2 && t < 103.85) {   // bolts into the core
+        const a = seg(t, 103.2, 103.75) * (1 - seg(t, 103.75, 103.85));
         for (let b = 0; b < 4; b++) {
           if (hash(fi * 5 + b, 98) < 0.4) continue;
           const ang = hash(fi * 5 + b, 99) * TAU, R = Math.hypot(W, H) * 0.55;
-          strokeBolt(lc, boltPts(CX + Math.cos(ang) * R, CY + Math.sin(ang) * R, CX, CY, fi * 17 + b, 0.3, 5), 2.4 * U, a * 0.8);
+          strokeBolt(lc, boltPts(CP[0] + Math.cos(ang) * R, CP[1] + Math.sin(ang) * R, CP[0], CP[1], fi * 17 + b, 0.3, 5), 2.4 * U, a * 0.8);
         }
       }
       lc.globalCompositeOperation = 'source-over';
-      // implosion core: grows on the reverse cymbal, becomes the light the anvil is struck in
+      // implosion core at the strike point: grows on the reverse cymbal, becomes the light the anvil is struck in
       const cp = seg(t, 102.9, 104.0, E.inC), cf = seg(t, 104.0, 104.2, E.outQ);
-      tf(core, { x: CX, y: CY, s: 0.02 + 1.5 * cp + 0.8 * cf + 0.04 * Math.sin(t * 40) * cp, o: t < 102.9 ? 0 : Math.min(1, cp * 1.4) * (1 - cf) });
+      tf(core, { x: CP[0], y: CP[1], s: 0.02 + 1.5 * cp + 0.8 * cf + 0.04 * Math.sin(t * 40) * cp, o: t < 102.9 ? 0 : Math.min(1, cp * 1.4) * (1 - cf) });
     };
   }, { z: 24 });
 
@@ -501,97 +579,115 @@
     el('div', 'abs', ring, { left: -400 * U + 'px', top: -400 * U + 'px', width: 800 * U + 'px', height: 800 * U + 'px', borderRadius: '50%', border: `${10 * U}px solid rgba(255,236,190,.9)`, boxShadow: '0 0 60px rgba(238,188,78,.8)' });
 
     // ---- the real anvil (site code) ----
-    const k = P ? 12 : 8;
+    const k = ANV_K;
     const anv = anchor(world, 6);
     const A = Anvil(anv, k).place(0, 0);
     A.cv.style.filter = 'drop-shadow(0 0 18px rgba(255,240,210,.35))';
-    const AH = 36 * k;
-    // ---- real crops ----
-    const tp = piece('title'), sp = piece('sub');
-    const title = pieceA(world, 'title', 0, (W * (P ? 0.84 : S ? 0.62 : 0.36)) / (tp ? tp.rect[2] : 320), 6);
+    // ---- real crops (the page subtitle is left out: page copy, unreadable at end-card size) ----
+    const title = pieceA(world, 'title', 0, kTitle, 6);
     const titleSheen = sheen(title, 'rgba(255,248,225,.9)');
-    const sub = pieceA(world, 'sub', 0, (W * (P ? 0.84 : S ? 0.8 : 0.45)) / (sp ? sp.rect[2] : 400), 6);
-    const kB = P ? 2.6 : S ? 2.3 : 3.0;
+    const kB = P ? 2.6 : S ? 2.3 : 2.6;
     const go = pieceA(world, 'go', 0, kB, 7), all = pieceA(world, 'all', 0, kB, 7);
     const goSheen = sheen(go, 'rgba(255,255,255,.85)');
     const chips = [0, 1].map(i => pieceA(world, 'chip', i, kB, 7));
-    const foot = pieceA(world, 'foot', 0, (W * (P ? 0.84 : S ? 0.74 : 0.42)) / (piece('foot') ? piece('foot').rect[2] : 400), 6);
+    const foot = pieceA(world, 'foot', 0, (W * (P ? 0.84 : S ? 0.88 : 0.42)) / (piece('foot') ? piece('foot').rect[2] : 400), 6);
     // ---- stamped lines ----
-    const stMax = W * (L ? 0.66 : P ? 0.86 : 0.84), stS = Math.min(fitDom(world, 'START CRAFTING.', 'px', {}, stMax, (P ? 150 : 130) * U), fitDom(world, 'STOP GUESSING.', 'px', {}, stMax, (P ? 150 : 130) * U));
+    const stMax = W * (L ? 0.66 : P ? 0.82 : 0.8), stS = Math.min(fitDom(world, 'START CRAFTING.', 'px', {}, stMax, (P ? 150 : 130) * U), fitDom(world, 'STOP GUESSING.', 'px', {}, stMax, (P ? 150 : 130) * U));
     const S1 = textA(world, 'STOP GUESSING.', stS, 'px', { color: '#eef1f6', filter: 'drop-shadow(0 10px 26px rgba(0,0,0,.85))' }, 8);
     const S2 = textA(world, 'START CRAFTING.', stS, 'px gold', { filter: 'drop-shadow(0 10px 26px rgba(0,0,0,.85)) drop-shadow(0 0 24px rgba(238,188,78,.35))' }, 8);
     const s2Sheen = (() => { const s = el('div', 'abs px', S2.e, { left: 0, top: 0, width: '100%', height: '100%', fontSize: 'inherit', lineHeight: 1, background: 'linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.95) 50%, rgba(255,255,255,0) 60%)', backgroundSize: '300% 100%', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', opacity: 0 }); s.textContent = 'START CRAFTING.'; return s; })();
+    // gold underline slammed under START CRAFTING. on the stamp hit
+    const ulA = anchor(world, 8);
+    const ulW = S2.w * 0.86, ulH = Math.max(3, 6 * U);
+    const ulBar = el('div', 'abs', ulA, { left: -ulW / 2 + 'px', top: -ulH / 2 + 'px', width: ulW + 'px', height: ulH + 'px', transformOrigin: '0 50%', background: 'linear-gradient(90deg, rgba(238,188,78,0), #f5d47e 12%, #eebc4e 88%, rgba(238,188,78,0))', boxShadow: '0 0 18px rgba(238,188,78,.75)' });
+    const S0 = L ? 1.35 : 1.18;   // stamp entry scale: the entering line stays inside the frame
     // ---- kinetic line + URL ----
-    const flHTML = '<span>FREE</span><span class="dot">·</span><span>IN YOUR BROWSER</span><span class="dot">·</span><span>9 LANGUAGES</span>';
-    const flStyle = { fontWeight: 700, letterSpacing: '.16em', color: '#dde2ec' };
-    const flS = fitDom(world, flHTML.replace(/class="dot"/g, 'style="margin:0 .55em"'), 'inter', flStyle, W * (L ? 0.46 : P ? 0.88 : 0.84), (P ? 42 : L ? 42 : 36) * U);
+    const flHTML = P ? '<span>FREE</span><span class="dot">·</span><span>IN YOUR BROWSER</span><br><span>9 LANGUAGES</span>'
+      : '<span>FREE</span><span class="dot">·</span><span>IN YOUR BROWSER</span><span class="dot">·</span><span>9 LANGUAGES</span>';
+    const flStyle = { fontWeight: 700, letterSpacing: '.16em', color: '#dde2ec', textAlign: 'center', lineHeight: P ? 1.6 : 1 };
+    const flS = fitDom(world, flHTML.replace(/class="dot"/g, 'style="margin:0 .55em"'), 'inter', flStyle, W * (L ? 0.42 : P ? 0.76 : 0.84), (P ? 44 : L ? 42 : 36) * U);
     const FL = textA(world, flHTML, flS, 'inter', flStyle, 8);
-    const flParts = [...FL.e.children];
-    flParts.forEach((c, i) => { c.style.display = 'inline-block'; if (c.className === 'dot') { c.style.margin = '0 .55em'; c.style.color = '#eebc4e'; } });
+    const flParts = [...FL.e.children].filter(c => c.tagName === 'SPAN');
+    flParts.forEach(c => { c.style.display = 'inline-block'; if (c.className === 'dot') { c.style.margin = '0 .55em'; c.style.color = '#eebc4e'; } });
     flParts[0].className = 'gold';
-    flParts[4].style.color = '#aab2c3';
-    // re-measure with the margins and re-centre
-    FL.w = FL.e.offsetWidth; FL.e.style.left = -FL.w / 2 + 'px';
-    const urlS = fitDom(world, URL_TXT, 'inter', { fontWeight: 600, letterSpacing: '.01em' }, W * (L ? 0.46 : P ? 0.84 : 0.8), (P ? 46 : L ? 46 : 42) * U);
+    flParts[flParts.length - 1].style.color = '#aab2c3';
+    FL.w = FL.e.offsetWidth; FL.h = FL.e.offsetHeight; FL.e.style.left = -FL.w / 2 + 'px'; FL.e.style.top = -FL.h / 2 + 'px';
+    const FLT = P ? [109.84, 110.4, 110.5, 111.42] : [109.84, 110.4, 110.5, 111.42, 111.5];
+    // URL: one line, or two in 9:16 ("vanatoliyv.github.io/" + "albion-craft-profit", clear of the Reels/TikTok rail)
+    const URL_LINES = P ? [[0, URL_HOST], [URL_HOST, URL_TXT.length]] : [[0, URL_TXT.length]];
+    const urlFont = { fontWeight: 600, letterSpacing: '.01em' };
+    const urlS = Math.min(...URL_LINES.map(([a, b]) => fitDom(world, URL_TXT.slice(a, b), 'inter', urlFont, W * (L ? 0.42 : P ? 0.74 : 0.8), (P ? 64 : L ? 46 : 42) * U)));
+    const lineH = urlS * 1.25, lineGap = urlS * 0.1;
+    const urlH = URL_LINES.length * lineH + (URL_LINES.length - 1) * lineGap;
     const urlA = anchor(world, 8);
-    const urlBox = el('div', 'abs inter', urlA, { fontSize: urlS + 'px', fontWeight: 600, letterSpacing: '.01em', whiteSpace: 'nowrap', lineHeight: 1.25, color: '#dde2ec' });
-    urlBox.textContent = URL_TXT; const urlW = urlBox.offsetWidth, urlH = urlBox.offsetHeight; urlBox.textContent = '';
-    urlBox.style.left = -urlW / 2 + 'px'; urlBox.style.top = -urlH / 2 + 'px'; urlBox.style.width = urlW + 'px';
-    const uHost = el('span', '', urlBox), uPath = el('span', '', urlBox, { color: '#f5d47e' });
-    const caret = el('span', '', urlBox, { display: 'inline-block', width: Math.max(2, 0.09 * urlS) + 'px', height: urlS * 1.05 + 'px', background: '#f5d47e', marginLeft: 0.06 * urlS + 'px', verticalAlign: '-0.16em', boxShadow: '0 0 10px rgba(238,188,78,.8)' });
-    const uLine = el('div', 'abs', urlA, { left: -urlW / 2 + 'px', top: urlH / 2 + 6 * U + 'px', width: urlW + 'px', height: 2 * U + 'px', transformOrigin: '0 50%', background: 'linear-gradient(90deg, #eebc4e, rgba(238,188,78,.15))' });
-    // exact width of the typed text after each key
-    const prU = el('div', 'abs inter', world, { fontSize: urlS + 'px', fontWeight: 600, letterSpacing: '.01em', whiteSpace: 'nowrap', visibility: 'hidden' });
+    const prU = el('div', 'abs inter', world, Object.assign({ fontSize: urlS + 'px', whiteSpace: 'nowrap', visibility: 'hidden' }, urlFont));
+    const wOf = str => { prU.textContent = str; return prU.offsetWidth; };
+    const ULs = URL_LINES.map(([a, b], i) => {
+      const w = wOf(URL_TXT.slice(a, b)), top = -urlH / 2 + i * (lineH + lineGap);
+      const box = el('div', 'abs inter', urlA, Object.assign({ left: -w / 2 + 'px', top: top + 'px', width: w + 'px', fontSize: urlS + 'px', whiteSpace: 'nowrap', lineHeight: lineH + 'px', color: '#dde2ec' }, urlFont));
+      const host = el('span', '', box), path = el('span', '', box, { color: '#f5d47e' });
+      const line = el('div', 'abs', urlA, { left: -w / 2 + 'px', top: top + lineH + 3 * U + 'px', width: w + 'px', height: 2 * U + 'px', transformOrigin: '0 50%', background: 'linear-gradient(90deg, #eebc4e, rgba(238,188,78,.15))' });
+      return { a, b, w, box, host, path, line, hs: null, ps: null };
+    });
+    const caret = el('span', '', ULs[0].box, { display: 'inline-block', width: Math.max(2, 0.09 * urlS) + 'px', height: urlS * 1.05 + 'px', background: '#f5d47e', marginLeft: 0.06 * urlS + 'px', verticalAlign: '-0.16em', boxShadow: '0 0 10px rgba(238,188,78,.8)' });
     const KEYS = evs('key', 'URL').map(e => e.t);
-    let acc = ''; const keyW = URL_CHUNKS.map(c => { acc += c; prU.textContent = acc; return prU.offsetWidth; }); prU.remove();
+    const keyLen = []; { let n = 0; for (const c of URL_CHUNKS) { n += c.length; keyLen.push(n); } }
+    const keyW = keyLen.map(n => ULs.map(Lx => { const e = Math.max(Lx.a, Math.min(n, Lx.b)); return e > Lx.a ? wOf(URL_TXT.slice(Lx.a, e)) : 0; }));
+    prU.remove();
     const typedN = t => { let n = 0; for (let i = 0; i < KEYS.length; i++) if (t >= KEYS[i]) n = i + 1; return n; };
     // ---- cursor ----
     const cur = Cursor(world, 58 * U);
 
     // ---------------- layouts per phase ----------------
-    const hOf = { anv: AH, title: title.h, sub: sub.h, s1: S1.h, s2: S2.h, btn: Math.max(go.h, all.h), chips: chips[0].h, fl: FL.h, url: urlH };
+    const hOf = { anv: AH, title: title.h, s1: S1.h, s2: S2.h, btn: Math.max(go.h, all.h), chips: chips[0].h, fl: FL.h, url: urlH };
     function col(list, cy, cx = CX) {
       const ys = stack(list.map(([n, s, g]) => ({ h: hOf[n] * s, gap: (g || 0) * U })), cy);
       const out = {}; list.forEach(([n, s], i) => { out[n] = { x: cx, y: ys[i], s, o: 1 }; }); return out;
     }
-    const LOCK = P ? col([['anv', 1], ['title', 1, 84], ['sub', 1, 30]], H * 0.475)
-      : col([['anv', 1], ['title', 1, 58], ['sub', 1, 24]], H * 0.52);
-    const STAMP = P ? col([['anv', 0.78], ['title', 0.9, 62], ['sub', 0.9, 26], ['s1', 1, 130], ['s2', 1, 34]], H * 0.5)
-      : S ? col([['anv', 0.56], ['title', 0.74, 36], ['sub', 0.74, 14], ['s1', 1, 66], ['s2', 1, 22]], H * 0.5)
-      : col([['anv', 0.56], ['title', 0.72, 34], ['sub', 0.72, 14], ['s1', 1, 62], ['s2', 1, 20]], H * 0.5);
-    const CTA = P ? col([['anv', 0.5], ['title', 0.72, 46], ['btn', 1, 118], ['chips', 1, 36], ['fl', 1, 84], ['url', 1, 58]], H * 0.5)
-      : S ? col([['anv', 0.4], ['title', 0.6, 26], ['btn', 1, 60], ['chips', 1, 24], ['fl', 1, 48], ['url', 1, 34]], H * 0.5)
-      : Object.assign(col([['anv', 0.9], ['title', 1, 44], ['sub', 0.75, 22]], H * 0.5, W * 0.26), col([['btn', 1], ['chips', 1, 34], ['fl', 1, 70], ['url', 1, 50]], H * 0.5, W * 0.69));
-    const FINAL = P ? col([['anv', 0.85], ['title', 0.95, 72], ['url', 1.0, 74]], H * 0.45)
+    const STAMP = P ? col([['anv', 0.78], ['title', 0.9, 62], ['s1', 1, 120], ['s2', 1, 34]], H * 0.48)
+      : S ? col([['anv', 0.62], ['title', 0.8, 38], ['s1', 1, 64], ['s2', 1, 22]], H * 0.5)
+      : col([['anv', 0.66], ['title', 0.9, 36], ['s1', 1, 60], ['s2', 1, 20]], H * 0.5);
+    const CTA = P ? col([['anv', 0.5], ['title', 0.72, 44], ['btn', 1, 100], ['chips', 1, 34], ['fl', 1, 70], ['url', 1, 54]], H * 0.44)
+      : S ? col([['anv', 0.46], ['title', 0.7, 28], ['btn', 1, 60], ['chips', 1, 24], ['fl', 1, 48], ['url', 1, 34]], H * 0.5)
+      : Object.assign(col([['anv', 0.9], ['title', 0.95, 46]], H * 0.5, W * 0.265), col([['btn', 1], ['chips', 1, 34], ['fl', 1, 64], ['url', 1, 48]], H * 0.5, W * 0.71));   // two columns, >= 0.06W apart
+    const FINAL = P ? col([['anv', 0.85], ['title', 0.95, 72], ['url', 1.0, 70]], H * 0.46)
       : S ? col([['anv', 0.82], ['title', 0.92, 46], ['url', 1.05, 50]], H * 0.45)
-      : col([['anv', 1.0], ['title', 1.08, 48], ['url', 1.15, 52]], H * 0.47);
-    const hide = st => Object.assign({}, st, { o: 0 });
-    // sub is not part of the CTA in the stacked formats, nor of the final lockup
-    if (!CTA.sub) CTA.sub = hide(Object.assign({}, STAMP.sub, { y: CTA.title.y + 30 * U, s: CTA.title.s }));
-    FINAL.sub = hide(Object.assign({}, FINAL.title, { y: FINAL.title.y + 40 * U }));
-    // pre-hit pose for the final snap (gathered in, a touch smaller)
-    const PRE = {}; for (const n of ['anv', 'title', 'url', 'sub']) PRE[n] = Object.assign({}, FINAL[n], { s: FINAL[n].s * 0.9, y: lerp(FINAL[n].y, H * 0.46, 0.1) });
-    PRE.sub.o = 0;
+      : col([['anv', 1.0], ['title', 1.08, 48], ['url', 1.25, 52]], H * 0.47);
+    // pre-hit pose for the final snap (gathered in, a touch smaller), then a last inhale on the reverse cymbal
+    const PRE = {}, PRE2 = {};
+    for (const n of ['anv', 'title', 'url']) { PRE[n] = Object.assign({}, FINAL[n], { s: FINAL[n].s * 0.9, y: lerp(FINAL[n].y, H * 0.46, 0.1) }); PRE2[n] = Object.assign({}, PRE[n], { s: PRE[n].s * 0.95 }); }
+    const XS0 = TS1 - 0.42;   // lockup -> stamp layout, landing just as STOP GUESSING. lands
     function lay(n, t) {
-      const keys = [[105.5, LOCK[n]], [105.95, STAMP[n], E.ioC], [107.88, STAMP[n]], [108.36, CTA[n], E.outC], [115.0, CTA[n]], [115.96, PRE[n], E.ioQ]];
-      if (n === 'url') { keys.splice(0, 4, [108.36, CTA.url]); }
+      const keys = n === 'url' ? [[108.42, CTA.url]]
+        : [[XS0, LOCK[n]], [TS1 - 0.02, STAMP[n], E.ioC], [107.9, STAMP[n]], [108.42, CTA[n], E.outC]];
+      keys.push([115.0, CTA[n]]);
+      // 16:9: the URL dips under the wordmark's path first, so the two never cross on the way to the lockup
+      if (L && n === 'url') keys.push([115.22, { x: lerp(CTA.url.x, PRE.url.x, 0.25), y: PRE.url.y + 30 * U, s: lerp(CTA.url.s, PRE.url.s, 0.4), o: 1 }, E.outQ], [115.55, PRE.url, E.ioQ]);
+      else keys.push([115.5, PRE[n], E.ioQ]);
+      keys.push([116.0, PRE2[n], E.inQ]);
       if (t < 116.0) return KO(t, keys);
-      return mixO(PRE[n], FINAL[n], spring(t - 116.0, 2.6, 0.42));
+      return mixO(PRE2[n], FINAL[n], spring(t - 116.0, 2.6, 0.42));
     }
     const rowX = (cx, s, ws, gap) => { const tot = ws.reduce((a, w) => a + w, 0) * s + gap * s * (ws.length - 1); let x = cx - tot / 2; return ws.map(w => { const c = x + w * s / 2; x += w * s + gap * s; return c; }); };
     // positions used by bursts
-    const strikePt = (st) => [st.x + (AJLogo.HIT_X + 0.5 - 22) * k * st.s, st.y + (AJLogo.ANVIL_TOP - 40) * k * st.s];
     const sp104 = strikePt(LOCK.anv), sp116 = strikePt(FINAL.anv);
     FX.burst({ t: 104.0, x: sp104[0], y: sp104[1], n: 190, speed: 2000, angle: -Math.PI / 2, spread: 2.7, gravity: 2600, life: 1.25, size: 4, color: [255, 214, 140], streak: 0.03 });
     FX.burst({ t: 104.0, x: sp104[0], y: sp104[1], n: 70, speed: 950, angle: -Math.PI / 2, spread: TAU, gravity: 900, life: 0.7, size: 3, color: [255, 255, 255] });
     FX.burst({ t: 116.0, x: sp116[0], y: sp116[1], n: 220, speed: 2100, angle: -Math.PI / 2, spread: 2.8, gravity: 2600, life: 1.4, size: 4, color: [255, 214, 140], streak: 0.03 });
     FX.burst({ t: 116.0, x: sp116[0], y: sp116[1], n: 80, speed: 1000, angle: -Math.PI / 2, spread: TAU, gravity: 900, life: 0.8, size: 3, color: [255, 255, 255] });
-        FX.burst({ t: 106.0, x: STAMP.s1.x, y: STAMP.s1.y, n: 60, speed: 700, angle: 0, spread: TAU, gravity: 300, life: 0.6, size: 2.5, color: [215, 222, 236] });
-    FX.burst({ t: 107.0, x: STAMP.s2.x, y: STAMP.s2.y, n: 90, speed: 1100, angle: 0, spread: TAU, gravity: 500, life: 0.75, size: 3, color: [255, 214, 140] });
+    // stamp dust kicks out from the ends of each line (never over the words)
+    for (const sd of [-1, 1]) {
+      FX.burst({ t: TS1 + 0.06, x: STAMP.s1.x + sd * S1.w * 0.5, y: STAMP.s1.y + S1.h * 0.3, n: 30, speed: 700, angle: sd > 0 ? -0.3 : Math.PI + 0.3, spread: 1.8, gravity: 400, life: 0.6, size: 2.5, color: [215, 222, 236] });
+      FX.burst({ t: TS2 + 0.06, x: STAMP.s2.x + sd * S2.w * 0.5, y: STAMP.s2.y + S2.h * 0.3, n: 45, speed: 1000, angle: sd > 0 ? -0.3 : Math.PI + 0.3, spread: 1.8, gravity: 500, life: 0.7, size: 3, color: [255, 214, 140] });
+    }
+    const ulY = STAMP.s2.y + S2.h / 2 + 16 * U;
+    FX.burst({ t: UL_T + 0.1, x: CX + ulW / 2, y: ulY, n: 40, speed: 800, angle: 0, spread: 1.6, gravity: 500, life: 0.55, size: 2.5, color: [255, 224, 150] });
+    for (const sd of [-1, 1]) FX.burst({ t: SH_T, x: CX + sd * S2.w * 0.5, y: STAMP.s2.y, n: 30, speed: 850, angle: sd > 0 ? 0 : Math.PI, spread: 2.2, gravity: 600, life: 0.55, size: 2.5, color: [255, 224, 150] });   // from the line's ends, not over the word
     const goC = (() => { const xs = rowX(CTA.btn.x, CTA.btn.s, [go.w, all.w], 26 * U); return [xs[0], CTA.btn.y]; })();
-    FX.burst({ t: 112.0, x: goC[0], y: goC[1], n: 90, speed: 1100, angle: 0, spread: TAU, gravity: 400, life: 0.8, size: 3, color: [255, 226, 160] });
-    FX.burst({ t: 112.0, x: goC[0], y: goC[1], n: 30, speed: 600, angle: 0, spread: TAU, gravity: 0, life: 0.6, size: 2, color: [255, 255, 255] });
-    FX.flash(112.0, 0.12, 0.06);
+    // the cursor lands on the arrow end of "Open Crafting →" (never over the word)
+    const goTip = [goC[0] + go.w * CTA.btn.s * 0.32, goC[1] + go.h * CTA.btn.s * 0.28];
+    FX.burst({ t: 112.0, x: goTip[0], y: goTip[1], n: 90, speed: 1100, angle: 0, spread: TAU, gravity: 400, life: 0.8, size: 3, color: [255, 226, 160] });
+    FX.burst({ t: 112.0, x: goTip[0], y: goTip[1], n: 30, speed: 600, angle: 0, spread: TAU, gravity: 0, life: 0.6, size: 2, color: [255, 255, 255] });
     // 4-point sparkles around the clicked button
     const stars = [0, 1, 2, 3, 4].map(i => el('div', 'abs', world, { width: 70 * U + 'px', height: 70 * U + 'px', zIndex: 9, opacity: 0 },
       `<svg viewBox="-10 -10 20 20" width="${70 * U}" height="${70 * U}"><path d="M0,-10 L1.4,-1.4 L10,0 L1.4,1.4 L0,10 L-1.4,1.4 L-10,0 L-1.4,-1.4 Z" fill="#fff6dc"/></svg>`));
@@ -600,11 +696,11 @@
       // background energy
       rays.style.opacity = (0.75 * seg(t, 104.0, 104.6) * (1 - 0.45 * seg(t, 108, 109)) + 0.25 * (t >= 116 ? Math.exp(-(t - 116) / 0.8) : 0)).toFixed(3);
       tf(rays, { r: (t - 104) * 6 });
-      tf(world, { s: 1 + 0.022 * seg(t, 116.3, 120, E.ioQ) });
+      tf(world, { s: (1 + 0.018 * seg(t, 108.4, 115.0, E.ioQ) * (1 - seg(t, 115.0, 115.9, E.ioQ))) * (1 + 0.022 * seg(t, 116.3, 120, E.ioQ)) });
 
-      // ---- anvil ----
+      // ---- anvil: born in the core's glare exactly on the hit ----
       const a = lay('anv', t);
-      const ain = seg(t, 103.82, 103.9);
+      const ain = seg(t, 103.98, 104.0);
       const pop = t >= 104 ? 1 + 0.06 * (1 - spring(t - 104, 3, 0.45)) : 1.06;
       tf(anv, { x: a.x, y: a.y, s: a.s * pop, o: ain });
       A.draw(t, [104.0, 116.0]);
@@ -614,63 +710,73 @@
       const spn = strikePt(a);
       tf(ring, { x: spn[0], y: spn[1], s: 0.12 + 1.6 * rp, o: t >= 104 ? (1 - rp) : 0 });
 
-      // ---- wordmark + subtitle ----
-      const ti = lay('title', t), ta = spring(t - 104.12, 2.6, 0.55);
-      tf(title.a, { x: ti.x, y: ti.y, s: ti.s * (1.28 - 0.28 * ta), o: t >= 104.12 ? clamp(ta * 3) : 0, blur: (1 - clamp(ta)) * 8 });
-      sweep(titleSheen, t, 104.5, 0.7); if (t > 105.5) sweep(titleSheen, t, 108.6, 0.8); if (t > 110) sweep(titleSheen, t, 116.45, 0.9);
-      const su = lay('sub', t), sa = spring(t - 104.45, 3, 0.6);
-      tf(sub.a, { x: su.x, y: su.y + (1 - sa) * 30 * U, s: su.s, o: (t >= 104.45 ? clamp(sa * 2) : 0) * su.o });
+      // ---- wordmark ----
+      const ti = lay('title', t), ta = spring(t - 104.04, 2.8, 0.6);
+      tf(title.a, { x: ti.x, y: ti.y, s: ti.s * (1 + (P ? 0.12 : 0.2) * (1 - ta)), o: t >= 104.04 ? clamp(ta * 3) : 0, blur: (1 - clamp(ta)) * 8 });
+      sweep(titleSheen, t, 104.45, 0.7); if (t > 105.5) sweep(titleSheen, t, 108.6, 0.8); if (t > 110) sweep(titleSheen, t, 116.45, 0.9);
 
-      // ---- stamps ----
-      [[S1, 106.0, -1.5, -1], [S2, 107.0, 1.5, 1]].forEach(([T, t0, rot, dir]) => {
-        const st = STAMP[T === S1 ? 's1' : 's2'], d = t - t0;
+      // ---- stamps (on the voiced words), accents on the stamp hits ----
+      const out = seg(t, 107.84, 108.02, E.inQ);
+      const punch = t >= SH_T ? 1 + 0.035 * Math.exp(-(t - SH_T) / 0.12) : 1;
+      [[S1, TS1, -1.5, -1, 's1'], [S2, TS2, 1.5, 1, 's2']].forEach(([T, t0, rot, dir, key]) => {
+        const st = STAMP[key], d = t - t0;
         if (d < 0) { T.a.style.opacity = 0; return; }
-        const land = d < 0.09 ? lerp(1.8, 1, E.inQ(d / 0.09)) : 1 + 0.03 * Math.exp(-(d - 0.09) * 16) * Math.sin((d - 0.09) * 55);
-        const out = seg(t, 107.88, 108.22, E.inQ);
-        // follow the lockup drift during the stamp phase; whoosh out sideways on the CTA
-        tf(T.a, { x: st.x + dir * out * W * 0.9, y: st.y, s: land, r: rot, o: clamp(d / 0.035) * (1 - out), blur: out * 18 });
+        const land = d < 0.09 ? lerp(S0, 1, E.inQ(d / 0.09)) : 1 + 0.03 * Math.exp(-(d - 0.09) * 16) * Math.sin((d - 0.09) * 55);
+        const ein = d < 0.09 ? clamp(0.15 + 0.85 * (S0 - land) / (S0 - 1) * (S0 - land) / (S0 - 1)) : 1;   // under .5 until the scale is below ~1.2
+        // whoosh: the stamps blow past the camera as the CTA comes in
+        tf(T.a, { x: st.x + dir * out * W * 0.12, y: st.y, s: land * punch * (1 + 0.3 * out), r: rot, o: ein * (1 - out), blur: (d < 0.09 ? (1 - d / 0.09) * 6 : 0) + out * 16 });
       });
-      const s2p = seg(t, 107.25, 107.85, E.ioQ); s2Sheen.style.opacity = s2p > 0 && s2p < 1 ? 1 : 0; s2Sheen.style.backgroundPosition = `${(100 - 100 * s2p).toFixed(1)}% 0`;
+      const s2p = seg(t, SH_T, SH_T + 0.6, E.ioQ); s2Sheen.style.opacity = s2p > 0 && s2p < 1 ? 1 : 0; s2Sheen.style.backgroundPosition = `${(100 - 100 * s2p).toFixed(1)}% 0`;
+      const ulp = seg(t, UL_T, UL_T + 0.12, E.outE);
+      tf(ulA, { x: STAMP.s2.x + out * W * 0.12, y: ulY, s: punch * (1 + 0.3 * out), r: 1.5, o: t >= UL_T ? 1 - out : 0, blur: out * 16 });
+      tf(ulBar, { sx: Math.max(0.001, ulp), bright: 1 + 1.2 * (t >= UL_T ? Math.exp(-(t - UL_T) / 0.12) : 0) });
 
       // ---- CTA elements (108-116) ----
-      const ctaOut = seg(t, 115.0, 115.85, E.inQ);
-      const suck = (st) => ({ x: lerp(st.x, CX, ctaOut * 0.6), y: lerp(st.y, H * 0.46, ctaOut * 0.6), s: st.s * (1 - 0.5 * ctaOut), o: 1 - ctaOut });
+      const ctaOut = seg(t, 114.9, 115.2, E.outQ);
+      const suck = (st) => ({ x: st.x, y: st.y + 18 * U * ctaOut, s: st.s * (1 - 0.15 * ctaOut), o: 1 - ctaOut });
       const bx = rowX(CTA.btn.x, CTA.btn.s, [go.w, all.w], 26 * U);
-      [[go, 108.12, bx[0]], [all, 108.3, bx[1]]].forEach(([T, t0, x0], j) => {
-        const d = t - t0, sa2 = spring(d, 2.8, 0.5);
-        const st = suck({ x: x0, y: CTA.btn.y, s: CTA.btn.s, o: 1 });
-        let s = st.s * (0.75 + 0.25 * sa2), bright = 1;
-        if (j === 0) {   // the click
+      [[go, 107.94, bx[0]], [all, 107.98, bx[1]]].forEach(([T, t0, x0], j) => {
+        const d = t - t0, sa2 = spring(d, 2.8, 0.55);
+        const st = suck({ x: lerp(CTA.btn.x, x0, clamp(sa2, 0, 1.1)), y: CTA.btn.y, s: CTA.btn.s, o: 1 });
+        let s = st.s * (0.75 + 0.25 * sa2), bright = 1, filt = '';
+        if (j === 0) {   // the click: a gold glow, no colour shift
           const c = t - 112.0;
-          if (c > -0.08 && c < 0.1) s *= 1 - 0.07 * (1 - Math.abs(c + 0.0) / 0.1);
+          if (c > -0.08 && c < 0.1) s *= 1 - 0.07 * (1 - Math.abs(c) / 0.1);
           if (c >= 0.1) s *= 1 + 0.05 * Math.exp(-(c - 0.1) / 0.25) * Math.sin((c - 0.1) * 22);
-          bright = 1 + (c >= 0 ? 0.45 * Math.exp(-c / 0.25) : 0) + 0.12 * seg(t, 111.75, 111.95) * (1 - seg(t, 112.6, 113.2));
+          const hov = seg(t, 111.75, 111.95) * (1 - seg(t, 112.6, 113.2)), hit = c >= 0 ? Math.exp(-c / 0.3) : 0;
+          bright = 1 + 0.15 * hit + 0.05 * hov;
+          const g = Math.min(1, 0.45 * hov + hit);
+          if (g > 0.01) filt = `drop-shadow(0 0 ${(30 * U * g).toFixed(1)}px rgba(238,188,78,${(0.85 * g).toFixed(3)}))`;
         }
-        tf(T.a, { x: st.x, y: st.y + (1 - sa2) * 80 * U, s, o: d >= 0 ? clamp(sa2 * 2) * st.o : 0, bright });
+        tf(T.a, { x: st.x, y: st.y + (1 - sa2) * 50 * U, s, o: d >= 0 ? clamp(sa2 * 2.5) * st.o : 0, bright, filter: filt });
       });
       sweep(goSheen, t, 112.05, 0.55); if (t > 113) sweep(goSheen, t, 113.5, 0.6);
       const cx2 = rowX(CTA.chips.x, CTA.chips.s, [chips[0].w, chips[1].w], 18 * U);
       chips.forEach((T, j) => {
-        const t0 = 108.5 + j * 0.16, d = t - t0, ca = spring(d, 3, 0.45);
+        const t0 = 108.3 + j * 0.12, d = t - t0, ca = spring(d, 3, 0.45);
         const st = suck({ x: cx2[j], y: CTA.chips.y, s: CTA.chips.s, o: 1 });
         tf(T.a, { x: st.x, y: st.y, s: st.s * (0.4 + 0.6 * ca), r: (j ? 5 : -5) * (1 - ca), o: d >= 0 ? clamp(ca * 2) * st.o : 0 });
       });
       // kinetic line, word-synced to the VO ("Free" 109.84, "in your browser" 110.5) + "9 languages" after it
       const fst = suck(CTA.fl);
       tf(FL.a, { x: fst.x, y: fst.y, s: fst.s, o: t >= 109.8 ? fst.o : 0 });
-      const FLT = [109.84, 110.4, 110.5, 111.42, 111.5];
-      flParts.forEach((c, i) => { const d = t - FLT[i], pa = spring(d, 3.2, 0.5); tf(c, { y: (1 - pa) * 0.8 * FL.h, s: i === 0 ? 1 + 0.35 * (1 - clamp(pa)) : 1, o: d >= 0 ? clamp(pa * 2) : 0 }); });
-      // URL: types on the 12 key clicks, then flies into the final lockup
-      const n = typedN(t), str = URL_CHUNKS.slice(0, n).join('');
-      uHost.textContent = str.slice(0, URL_HOST); uPath.textContent = str.slice(URL_HOST);
+      flParts.forEach((c, i) => { const d = t - FLT[i], pa = spring(d, 3.2, 0.5); tf(c, { y: (1 - pa) * 0.8 * flS, s: i === 0 ? 1 + 0.35 * (1 - clamp(pa)) : 1, o: d >= 0 ? clamp(pa * 2) : 0 }); });
+      // URL: types on the 12 key clicks, then gathers with the lockup
+      const n = typedN(t), len = n ? keyLen[n - 1] : 0;
+      let ci = ULs.findIndex(Lx => len < Lx.b); if (ci < 0) ci = ULs.length - 1;
+      ULs.forEach((Lx, i) => {
+        const e = Math.max(Lx.a, Math.min(len, Lx.b)), hEnd = Math.min(e, Math.max(Lx.a, URL_HOST));
+        const hs = URL_TXT.slice(Lx.a, hEnd), ps = URL_TXT.slice(Math.max(Lx.a, hEnd), e);
+        if (hs !== Lx.hs) { Lx.host.textContent = hs; Lx.hs = hs; }
+        if (ps !== Lx.ps) { Lx.path.textContent = ps; Lx.ps = ps; }
+        tf(Lx.line, { sx: Math.max(0.001, n ? keyW[n - 1][i] / Lx.w : 0), o: 0.85 * (1 - seg(t, 115.0, 115.5)) });
+      });
+      if (caret.parentNode !== ULs[ci].box) ULs[ci].box.appendChild(caret);
       const u = lay('url', t);
       const typing = t >= 109.95 && t < 111.6;
       caret.style.opacity = t < 109.95 || t >= 115.0 ? 0 : (typing || Math.floor((t - 111.6) * 2.6) % 2 === 0 ? 1 : 0);
       tf(urlA, { x: u.x, y: u.y, s: u.s, o: t >= 109.9 ? 1 : 0 });
-      const lw = n ? keyW[n - 1] / urlW : 0;
-      tf(uLine, { sx: Math.max(0.001, lw), o: 0.85 * (1 - seg(t, 115.0, 115.6)) });
       // cursor: flies in, clicks the real "Open Crafting →" at 112.0, drifts away
-      const goTip = [goC[0] + go.w * CTA.btn.s * 0.18, goC[1] + go.h * CTA.btn.s * 0.12];
       const [kx, ky] = cursorPath(t, [[111.15, W * 1.08, H * (P ? 0.9 : 0.96)], [111.9, goTip[0], goTip[1]], [112.25, goTip[0], goTip[1]], [113.4, goTip[0] + W * 0.12, goTip[1] + H * 0.05]]);
       cur.set(t, kx, ky, [112.0], t >= 111.15 ? 1 - seg(t, 113.0, 113.5) : 0);
       stars.forEach((st, i) => {

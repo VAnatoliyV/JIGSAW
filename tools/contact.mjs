@@ -4,12 +4,14 @@
 //        [--range 0:32:2]  (adds every 2 s from 0 to 32; can be combined with --times)
 //        [--frames dir]    (also keep the full-size PNG frames there)
 //        [--capture bf|cdp]
+//        [--url <film url>] (default: the live film on :8800, i.e. the current working tree)
+//        [--strict]        (fail on page errors / missing images instead of only warning)
 import { execFileSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { openFilm, FMTS } from './film_browser.mjs';
+import { openFilm, FMTS, killAllBrowsers } from './film_browser.mjs';
 
 const argv = process.argv.slice(2);
 const A = {};
@@ -30,7 +32,9 @@ const dir = keep || fs.mkdtempSync(path.join(os.tmpdir(), 'contact-'));
 fs.mkdirSync(dir, { recursive: true });
 fs.mkdirSync(path.dirname(out), { recursive: true });
 
-const g = await openFilm({ w: W, h: H, capture: A.capture || 'bf', format: 'png', log: m => console.log(m) });
+for (const sgn of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sgn, () => { killAllBrowsers(); if (!keep) fs.rmSync(dir, { recursive: true, force: true }); process.exit(130); });
+const g = await openFilm({ w: W, h: H, capture: A.capture || 'bf', format: 'png', url: typeof A.url === 'string' ? A.url : undefined,
+  lenient: !A.strict, log: m => console.log(m) });
 const files = [];
 const T0 = Date.now();
 try {
@@ -43,6 +47,7 @@ try {
   }
 } finally { await g.close(); }
 console.log(`${times.length} frames in ${((Date.now() - T0) / 1000).toFixed(1)} s`);
+if (g.errors.length || g.warnings.length) console.log(`WARNING: the film reported ${g.errors.length} exception(s) and ${g.warnings.length} console warning(s) (see above); a production render would fail`);
 const sheet = path.join(path.dirname(fileURLToPath(import.meta.url)), 'sheet.py');
 execFileSync('python3', [sheet, out, String(cols), String(cell), ...files], { stdio: 'inherit' });
 if (!keep) fs.rmSync(dir, { recursive: true, force: true });
